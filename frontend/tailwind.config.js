@@ -1,0 +1,110 @@
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // Brown-based palette for Orijins
+        brown: {
+          50: '#faf5f0',
+          100: '#f3e7db',
+          200: '#ead6be',
+          300: '#d9b995',
+          400: '#c5966a',
+          500: '#a9744a',
+          600: '#8b5b39',
+          700: '#734a2f',
+          800: '#5a3a24',
+          900: '#3e2818',
+        },
+        primary: {
+          50: '#faf5f0',
+          100: '#f3e7db',
+          200: '#ead6be',
+          300: '#d9b995',
+          400: '#c5966a',
+          500: '#a9744a',
+          600: '#8b5b39',
+          700: '#734a2f',
+          800: '#5a3a24',
+          900: '#3e2818',
+        },
+        secondary: {
+          50: '#f9f6f2',
+          100: '#efe6da',
+          200: '#dfcfb8',
+          300: '#c8ad86',
+          400: '#b38f63',
+          500: '#a1774e',
+          600: '#855e3d',
+          700: '#6c4b31',
+          800: '#543a26',
+          900: '#3b281a',
+        },
+        success: {
+          50: '#f8f5f1',
+          100: '#ede3d6',
+          200: '#dcc6ad',
+          300: '#c7a27d',
+          400: '#ad7f57',
+          500: '#936840',
+          600: '#7a5635',
+          700: '#62452b',
+          800: '#4a3421',
+          900: '#2f2114',
+        },
+        warning: {
+          50: '#fbf7f2',
+          100: '#f3e7d7',
+          200: '#e6cfad',
+          300: '#d4ad79',
+          400: '#bf8c4e',
+          500: '#a97236',
+          600: '#8e5a2c',
+          700: '#734824',
+          800: '#58381b',
+          900: '#3c2612',
+        },
+        danger: {
+          50: '#fbf6f4',
+          100: '#f2e2db',
+          200: '#e3c3b6',
+          300: '#ce9b89',
+          400: '#b87663',
+          500: '#a05c4c',
+          600: '#854b3f',
+          700: '#6a3c33',
+          800: '#4f2d26',
+          900: '#331d18',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.5s ease-in-out',
+        'slide-in': 'slideIn 0.3s ease-out',
+        'bounce-in': 'bounceIn 0.6s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideIn: {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        bounceIn: {
+          '0%': { transform: 'scale(0.3)', opacity: '0' },
+          '50%': { transform: 'scale(1.05)', opacity: '0.8' },
+          '70%': { transform: 'scale(0.9)', opacity: '0.9' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+      },
+    },
+  },
+  plugins: [],
+}

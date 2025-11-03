@@ -1,0 +1,23 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Builds / caches
+dist/
+build/
+coverage/
+.cache/
+.vscode/
+.DS_Store
+
+# Env and local config
+.env
+**/.env
+backend/.env
+frontend/.env
+*.local
+*.log
+
+# Misc
+npm-debug.log*
+yarn-error.log*
