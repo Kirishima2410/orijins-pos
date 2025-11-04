@@ -47,6 +47,7 @@ router.post('/', [
         const { items, payment_method, customer_name } = req.body;
         const normalizedItems = items.map((i) => ({
             menu_item_id: Number(i.menu_item_id),
+            menu_item_variant_id: i.menu_item_variant_id ? Number(i.menu_item_variant_id) : null,
             quantity: Number(i.quantity)
         }));
         const orderNumber = generateOrderNumber();
@@ -75,12 +76,38 @@ router.post('/', [
                 throw new Error(`Insufficient stock for "${menuItem.name}". Available: ${menuItem.stock_quantity}`);
             }
 
-            const itemTotal = menuItem.price * item.quantity;
+            // Determine price from variant if provided
+            let unitPrice = menuItem.price;
+            let variantName = null;
+            let sizeLabel = null;
+            let variantId = item.menu_item_variant_id;
+            if (item.menu_item_variant_id) {
+                const [variants] = await connection.execute(
+                    'SELECT id, variant_name, size_label, price, is_available FROM menu_item_variants WHERE id = ? AND menu_item_id = ?',
+                    [item.menu_item_variant_id, item.menu_item_id]
+                );
+                if (variants.length === 0) {
+                    throw new Error(`Variant not found for item ${menuItem.name}`);
+                }
+                const v = variants[0];
+                if (!v.is_available) {
+                    throw new Error(`Selected variant is not available for "${menuItem.name}"`);
+                }
+                unitPrice = v.price;
+                variantName = v.variant_name;
+                sizeLabel = v.size_label;
+                variantId = v.id;
+            }
+
+            const itemTotal = unitPrice * item.quantity;
             totalAmount += itemTotal;
 
             validatedItems.push({
                 ...item,
-                unit_price: menuItem.price,
+                menu_item_variant_id: variantId,
+                variant_name: variantName,
+                size_label: sizeLabel,
+                unit_price: unitPrice,
                 total_price: itemTotal,
                 menu_item_name: menuItem.name
             });
@@ -98,8 +125,8 @@ router.post('/', [
         for (const item of validatedItems) {
             // Insert order item
             await connection.execute(
-                'INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)',
-                [orderId, item.menu_item_id, item.quantity, item.unit_price, item.total_price]
+                'INSERT INTO order_items (order_id, menu_item_id, menu_item_variant_id, variant_name, size_label, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [orderId, item.menu_item_id, item.menu_item_variant_id, item.variant_name, item.size_label, item.quantity, item.unit_price, item.total_price]
             );
 
             // Update stock quantity

@@ -61,6 +61,8 @@ const MenuManagement: React.FC = () => {
   };
 
   const handleDeleteCategory = async (id: number) => {
+    const ok = window.confirm('Delete this category? This cannot be undone.');
+    if (!ok) return;
     try {
       await menuAPI.deleteCategory(id);
       toast.success('Category deleted');
@@ -96,6 +98,8 @@ const MenuManagement: React.FC = () => {
   };
 
   const handleDeleteItem = async (id: number) => {
+    const ok = window.confirm('Delete this menu item? This cannot be undone.');
+    if (!ok) return;
     try {
       await menuAPI.deleteItem(id);
       toast.success('Item deleted');
@@ -142,8 +146,11 @@ const MenuManagement: React.FC = () => {
       action === 'set' ? 'Set stock to:' : action === 'add' ? 'Add quantity:' : 'Subtract quantity:'
     );
     if (qty === null) return;
+    if (action === 'subtract' && qty > Number(item.stock_quantity || 0)) {
+      return toast.error('Cannot subtract more than current stock');
+    }
     try {
-      await menuAPI.updateStock(item.id, { quantity: qty, action, notes: 'Adjusted from Menu Management' });
+      await menuAPI.updateStock(Number(item.id), { quantity: qty, action, notes: 'Adjusted from Menu Management' });
       toast.success('Stock updated');
       loadData();
     } catch (e) {

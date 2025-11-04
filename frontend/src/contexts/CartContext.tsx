@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { MenuItem, CartItem } from '../types';
+import { MenuItem, MenuItemVariant, CartItem } from '../types';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (menuItem: MenuItem, quantity?: number) => void;
-  removeItem: (menuItemId: number) => void;
-  updateQuantity: (menuItemId: number, quantity: number) => void;
+  addItem: (menuItem: MenuItem, quantity?: number, variant?: MenuItemVariant) => void;
+  removeItem: (menuItemId: number, variantId?: number) => void;
+  updateQuantity: (menuItemId: number, quantity: number, variantId?: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalAmount: () => number;
-  getItemQuantity: (menuItemId: number) => number;
+  getItemQuantity: (menuItemId: number, variantId?: number) => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -41,41 +41,41 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [items]);
 
   // Add item to cart
-  const addItem = (menuItem: MenuItem, quantity: number = 1) => {
+  const addItem = (menuItem: MenuItem, quantity: number = 1, variant?: MenuItemVariant) => {
     setItems(prevItems => {
-      const existingItem = prevItems.find(item => item.menu_item.id === menuItem.id);
+      const existingItem = prevItems.find(item => item.menu_item.id === menuItem.id && (item.variant?.id || 0) === (variant?.id || 0));
       
       if (existingItem) {
         // Update existing item quantity
         return prevItems.map(item =>
-          item.menu_item.id === menuItem.id
+          item.menu_item.id === menuItem.id && (item.variant?.id || 0) === (variant?.id || 0)
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
         // Add new item
-        return [...prevItems, { menu_item: menuItem, quantity }];
+        return [...prevItems, { menu_item: menuItem, variant, quantity }];
       }
     });
   };
 
   // Remove item from cart
-  const removeItem = (menuItemId: number) => {
+  const removeItem = (menuItemId: number, variantId?: number) => {
     setItems(prevItems => 
-      prevItems.filter(item => item.menu_item.id !== menuItemId)
+      prevItems.filter(item => !(item.menu_item.id === menuItemId && (item.variant?.id || 0) === (variantId || 0)))
     );
   };
 
   // Update item quantity
-  const updateQuantity = (menuItemId: number, quantity: number) => {
+  const updateQuantity = (menuItemId: number, quantity: number, variantId?: number) => {
     if (quantity <= 0) {
-      removeItem(menuItemId);
+      removeItem(menuItemId, variantId);
       return;
     }
 
     setItems(prevItems =>
       prevItems.map(item =>
-        item.menu_item.id === menuItemId
+        item.menu_item.id === menuItemId && (item.variant?.id || 0) === (variantId || 0)
           ? { ...item, quantity }
           : item
       )
@@ -95,12 +95,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Get total amount
   const getTotalAmount = (): number => {
-    return items.reduce((total, item) => total + (item.menu_item.price * item.quantity), 0);
+    return items.reduce((total, item) => total + ((item.variant?.price ?? item.menu_item.price) * item.quantity), 0);
   };
 
   // Get quantity of specific item
-  const getItemQuantity = (menuItemId: number): number => {
-    const item = items.find(item => item.menu_item.id === menuItemId);
+  const getItemQuantity = (menuItemId: number, variantId?: number): number => {
+    const item = items.find(item => item.menu_item.id === menuItemId && (item.variant?.id || 0) === (variantId || 0));
     return item ? item.quantity : 0;
   };
 

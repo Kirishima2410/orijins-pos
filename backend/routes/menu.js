@@ -56,11 +56,36 @@ router.get('/items', async (req, res) => {
 
         const [items] = await pool.execute(query, params);
 
+        // fetch variants for all items in a single query
+        const itemIds = items.map(i => i.id);
+        let variantsByItem = {};
+        if (itemIds.length) {
+            const [variants] = await pool.query(
+                `SELECT id, menu_item_id, variant_name, size_label, price, is_available
+                 FROM menu_item_variants
+                 WHERE menu_item_id IN (${itemIds.map(() => '?').join(',')})
+                 ORDER BY price ASC`,
+                itemIds
+            );
+            for (const v of variants) {
+                if (!variantsByItem[v.menu_item_id]) variantsByItem[v.menu_item_id] = [];
+                variantsByItem[v.menu_item_id].push({
+                    id: v.id,
+                    menu_item_id: v.menu_item_id,
+                    variant_name: v.variant_name,
+                    size_label: v.size_label,
+                    price: Number(v.price),
+                    is_available: v.is_available
+                });
+            }
+        }
+
         const normalized = items.map((item) => ({
             ...item,
             price: Number(item.price),
             stock_quantity: item.stock_quantity !== undefined ? Number(item.stock_quantity) : item.stock_quantity,
-            low_stock_threshold: item.low_stock_threshold !== undefined ? Number(item.low_stock_threshold) : item.low_stock_threshold
+            low_stock_threshold: item.low_stock_threshold !== undefined ? Number(item.low_stock_threshold) : item.low_stock_threshold,
+            variants: variantsByItem[item.id] || []
         }));
 
         res.json(normalized);
@@ -375,8 +400,12 @@ router.patch('/admin/items/:id/stock', [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { id } = req.params;
+        const id = Number(req.params.id);
         const { quantity, action, notes } = req.body;
+        const qty = Number(quantity);
+        if (!Number.isInteger(qty) || qty < 0) {
+            return res.status(400).json({ error: 'Quantity must be a non-negative integer' });
+        }
 
         // Get current item
         const [items] = await pool.execute(
@@ -389,21 +418,25 @@ router.patch('/admin/items/:id/stock', [
         }
 
         const item = items[0];
-        let newStock = item.stock_quantity;
+        let newStock = Number(item.stock_quantity || 0);
         let quantityChange = 0;
 
         switch (action) {
             case 'set':
-                quantityChange = quantity - item.stock_quantity;
-                newStock = quantity;
+                quantityChange = qty - newStock;
+                if (qty < 0) return res.status(400).json({ error: 'Stock cannot be negative' });
+                newStock = qty;
                 break;
             case 'add':
-                quantityChange = quantity;
-                newStock = item.stock_quantity + quantity;
+                quantityChange = qty;
+                newStock = newStock + qty;
                 break;
             case 'subtract':
-                quantityChange = -quantity;
-                newStock = Math.max(0, item.stock_quantity - quantity);
+                if (qty > newStock) {
+                    return res.status(400).json({ error: 'Cannot subtract more than current stock' });
+                }
+                quantityChange = -qty;
+                newStock = newStock - qty;
                 break;
         }
 
@@ -416,7 +449,7 @@ router.patch('/admin/items/:id/stock', [
         // Log inventory change
         await pool.execute(
             'INSERT INTO inventory_logs (menu_item_id, action_type, quantity_change, previous_stock, new_stock, notes) VALUES (?, ?, ?, ?, ?, ?)',
-            [id, action === 'subtract' ? 'adjustment' : 'restock', quantityChange, item.stock_quantity, newStock, notes || null]
+            [id, action === 'subtract' ? 'adjustment' : 'restock', quantityChange, Number(item.stock_quantity || 0), newStock, notes || null]
         );
 
         // Log activity
@@ -425,11 +458,7 @@ router.patch('/admin/items/:id/stock', [
             [req.user.id, 'stock_update', 'menu_items', id, JSON.stringify({ action, quantity_change, new_stock: newStock })]
         );
 
-        res.json({ 
-            message: 'Stock updated successfully',
-            new_stock: newStock,
-            quantity_change
-        });
+        res.json({ message: 'Stock updated successfully', new_stock: newStock, quantity_change });
     } catch (error) {
         console.error('Update stock error:', error);
         res.status(500).json({ error: 'Internal server error' });

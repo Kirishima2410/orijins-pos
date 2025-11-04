@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../../contexts/CartContext';
 import { menuAPI, ordersAPI } from '../../utils/api';
-import { Category, MenuItem } from '../../types';
+import { Category, MenuItem, MenuItemVariant } from '../../types';
 import {
   PlusIcon,
   MinusIcon,
@@ -52,24 +52,29 @@ const POSInterface: React.FC = () => {
   });
 
   const handleAddToCart = (item: MenuItem) => {
-    addItem(item, 1);
-    toast.success(`${item.name} added to cart`);
+    // choose default variant if available: the cheapest available
+    const variant: MenuItemVariant | undefined = (item.variants && item.variants.length)
+      ? [...item.variants].sort((a,b) => (a.price - b.price))[0]
+      : undefined;
+    addItem(item, 1, variant);
+    const label = variant?.size_label || variant?.variant_name;
+    toast.success(`${item.name}${label ? ` (${label})` : ''} added to cart`);
   };
 
-  const handleQuantityChange = (itemId: number, change: number) => {
-    const item = items.find(i => i.menu_item.id === itemId);
+  const handleQuantityChange = (itemId: number, change: number, variantId?: number) => {
+    const item = items.find(i => i.menu_item.id === itemId && (i.variant?.id || 0) === (variantId || 0));
     if (item) {
       const newQuantity = item.quantity + change;
       if (newQuantity <= 0) {
-        removeItem(itemId);
+        removeItem(itemId, variantId);
       } else {
-        updateQuantity(itemId, newQuantity);
+        updateQuantity(itemId, newQuantity, variantId);
       }
     }
   };
 
-  const handleRemoveItem = (itemId: number) => {
-    removeItem(itemId);
+  const handleRemoveItem = (itemId: number, variantId?: number) => {
+    removeItem(itemId, variantId);
     toast.success('Item removed from cart');
   };
 
@@ -84,6 +89,7 @@ const POSInterface: React.FC = () => {
       const orderData = {
         items: items.map(item => ({
           menu_item_id: item.menu_item.id,
+          menu_item_variant_id: item.variant?.id,
           quantity: item.quantity,
         })),
         payment_method: paymentMethod,
@@ -250,28 +256,28 @@ const POSInterface: React.FC = () => {
                   {/* Cart Items */}
                   <div className="space-y-3 max-h-64 overflow-y-auto">
                     {items.map((item) => (
-                      <div key={item.menu_item.id} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                      <div key={`${item.menu_item.id}-${item.variant?.id || 0}`} className="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 text-sm">{item.menu_item.name}</h4>
-                          <p className="text-xs text-gray-600">₱{item.menu_item.price.toFixed(2)} each</p>
+                          <h4 className="font-medium text-gray-900 text-sm">{item.menu_item.name} {item.variant?.size_label ? `(${item.variant.size_label})` : ''}</h4>
+                          <p className="text-xs text-gray-600">₱{(item.variant?.price ?? item.menu_item.price).toFixed(2)} each</p>
                         </div>
                         
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => handleQuantityChange(item.menu_item.id, -1)}
+                            onClick={() => handleQuantityChange(item.menu_item.id, -1, item.variant?.id)}
                             className="p-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
                           >
                             <MinusIcon className="w-3 h-3 text-gray-600" />
                           </button>
                           <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
                           <button
-                            onClick={() => handleQuantityChange(item.menu_item.id, 1)}
+                            onClick={() => handleQuantityChange(item.menu_item.id, 1, item.variant?.id)}
                             className="p-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
                           >
                             <PlusIcon className="w-3 h-3 text-gray-600" />
                           </button>
                           <button
-                            onClick={() => handleRemoveItem(item.menu_item.id)}
+                            onClick={() => handleRemoveItem(item.menu_item.id, item.variant?.id)}
                             className="p-1 text-gray-400 hover:text-danger-600 transition-colors duration-200 ml-2"
                           >
                             <TrashIcon className="w-3 h-3" />

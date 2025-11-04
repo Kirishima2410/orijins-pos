@@ -34,19 +34,32 @@ export interface MenuItem {
   description?: string;
   category_id: number;
   category_name?: string;
-  price: number;
+  price: number; // base price (may be 0 if variants are used)
   image_url?: string;
   is_available: boolean;
   stock_quantity: number;
   low_stock_threshold: number;
   created_at: string;
   updated_at: string;
+  variants?: MenuItemVariant[];
+}
+
+export interface MenuItemVariant {
+  id: number;
+  menu_item_id: number;
+  variant_name?: string; // e.g., 16oz, 22oz, Slice, Whole
+  size_label?: string;
+  price: number;
+  is_available?: boolean;
 }
 
 // Order types
 export interface OrderItem {
   id?: number;
   menu_item_id: number;
+  menu_item_variant_id?: number;
+  variant_name?: string;
+  size_label?: string;
   menu_item_name?: string;
   menu_item_description?: string;
   quantity: number;
@@ -107,6 +120,7 @@ export interface DashboardOverview {
 // Cart types
 export interface CartItem {
   menu_item: MenuItem;
+  variant?: MenuItemVariant;
   quantity: number;
 }
 

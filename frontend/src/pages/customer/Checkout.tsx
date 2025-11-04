@@ -61,20 +61,20 @@ const CustomerCheckout: React.FC = () => {
     }
   };
 
-  const handleQuantityChange = (itemId: number, change: number) => {
-    const item = items.find(i => i.menu_item.id === itemId);
+  const handleQuantityChange = (itemId: number, change: number, variantId?: number) => {
+    const item = items.find(i => i.menu_item.id === itemId && (i.variant?.id || 0) === (variantId || 0));
     if (item) {
       const newQuantity = item.quantity + change;
       if (newQuantity <= 0) {
-        removeItem(itemId);
+        removeItem(itemId, variantId);
       } else {
-        updateQuantity(itemId, newQuantity);
+        updateQuantity(itemId, newQuantity, variantId);
       }
     }
   };
 
-  const handleRemoveItem = (itemId: number) => {
-    removeItem(itemId);
+  const handleRemoveItem = (itemId: number, variantId?: number) => {
+    removeItem(itemId, variantId);
     toast.success('Item removed from cart');
   };
 
@@ -89,6 +89,7 @@ const CustomerCheckout: React.FC = () => {
       const orderData = {
         items: items.map(item => ({
           menu_item_id: item.menu_item.id,
+          menu_item_variant_id: item.variant?.id,
           quantity: item.quantity,
         })),
         payment_method: paymentMethod,
@@ -136,24 +137,24 @@ const CustomerCheckout: React.FC = () => {
             <div className="card-body">
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={item.menu_item.id} className="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
+                  <div key={`${item.menu_item.id}-${item.variant?.id || 0}`} className="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0">
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{item.menu_item.name}</h3>
-                      <p className="text-sm text-gray-600">₱{item.menu_item.price.toFixed(2)} each</p>
+                      <h3 className="font-medium text-gray-900">{item.menu_item.name} {item.variant?.size_label ? `(${item.variant.size_label})` : ''}</h3>
+                      <p className="text-sm text-gray-600">₱{(item.variant?.price ?? item.menu_item.price).toFixed(2)} each</p>
                     </div>
                     
                     <div className="flex items-center space-x-3">
                       {/* Quantity Controls */}
                       <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => handleQuantityChange(item.menu_item.id, -1)}
+                          onClick={() => handleQuantityChange(item.menu_item.id, -1, item.variant?.id)}
                           className="p-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
                         >
                           <MinusIcon className="w-4 h-4 text-gray-600" />
                         </button>
                         <span className="w-8 text-center font-medium">{item.quantity}</span>
                         <button
-                          onClick={() => handleQuantityChange(item.menu_item.id, 1)}
+                          onClick={() => handleQuantityChange(item.menu_item.id, 1, item.variant?.id)}
                           className="p-1 rounded-full hover:bg-gray-100 transition-colors duration-200"
                         >
                           <PlusIcon className="w-4 h-4 text-gray-600" />
@@ -162,12 +163,12 @@ const CustomerCheckout: React.FC = () => {
                       
                       <div className="text-right">
                         <p className="font-medium text-gray-900">
-                          ₱{(item.menu_item.price * item.quantity).toFixed(2)}
+                          ₱{(((item.variant?.price ?? item.menu_item.price)) * item.quantity).toFixed(2)}
                         </p>
                       </div>
                       
                       <button
-                        onClick={() => handleRemoveItem(item.menu_item.id)}
+                        onClick={() => handleRemoveItem(item.menu_item.id, item.variant?.id)}
                         className="p-2 text-gray-400 hover:text-danger-600 transition-colors duration-200"
                       >
                         <TrashIcon className="w-4 h-4" />
