@@ -36,7 +36,7 @@ router.get('/categories', async (req, res) => {
 router.get('/items', async (req, res) => {
     try {
         const { category_id } = req.query;
-        
+
         let query = `
             SELECT mi.id, mi.name, mi.description, mi.category_id, mi.price, 
                    mi.image_url, mi.is_available, mi.stock_quantity, mi.low_stock_threshold, 
@@ -45,13 +45,13 @@ router.get('/items', async (req, res) => {
             LEFT JOIN categories c ON mi.category_id = c.id
             WHERE mi.is_available = TRUE
         `;
-        
+
         const params = [];
         if (category_id) {
             query += ' AND mi.category_id = ?';
             params.push(category_id);
         }
-        
+
         query += ' ORDER BY c.display_order, mi.name';
 
         const [items] = await pool.execute(query, params);
@@ -219,11 +219,11 @@ router.put('/admin/categories/:id', [
         await pool.execute(
             'INSERT INTO audit_logs (user_id, action, table_name, record_id, old_values, new_values) VALUES (?, ?, ?, ?, ?, ?)',
             [
-                req.user.id, 
-                'update', 
-                'categories', 
-                id, 
-                JSON.stringify(oldCategories[0]), 
+                req.user.id,
+                'update',
+                'categories',
+                id,
+                JSON.stringify(oldCategories[0]),
                 JSON.stringify({ name, description, display_order })
             ]
         );
@@ -247,8 +247,8 @@ router.delete('/admin/categories/:id', [authenticateToken, requireRole(['owner',
         );
 
         if (items[0].count > 0) {
-            return res.status(400).json({ 
-                error: 'Cannot delete category that has menu items. Please move or delete the items first.' 
+            return res.status(400).json({
+                error: 'Cannot delete category that has menu items. Please move or delete the items first.'
             });
         }
 
@@ -370,11 +370,11 @@ router.put('/admin/items/:id', [
         await pool.execute(
             'INSERT INTO audit_logs (user_id, action, table_name, record_id, old_values, new_values) VALUES (?, ?, ?, ?, ?, ?)',
             [
-                req.user.id, 
-                'update', 
-                'menu_items', 
-                id, 
-                JSON.stringify(oldItems[0]), 
+                req.user.id,
+                'update',
+                'menu_items',
+                id,
+                JSON.stringify(oldItems[0]),
                 JSON.stringify({ name, description, category_id, price, image_url, is_available, stock_quantity, low_stock_threshold })
             ]
         );
@@ -455,10 +455,10 @@ router.patch('/admin/items/:id/stock', [
         // Log activity
         await pool.execute(
             'INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values) VALUES (?, ?, ?, ?, ?)',
-            [req.user.id, 'stock_update', 'menu_items', id, JSON.stringify({ action, quantity_change, new_stock: newStock })]
+            [req.user.id, 'stock_update', 'menu_items', id, JSON.stringify({ action, quantity_change: quantityChange, new_stock: newStock })]
         );
 
-        res.json({ message: 'Stock updated successfully', new_stock: newStock, quantity_change });
+        res.json({ message: 'Stock updated successfully', new_stock: newStock, quantity_change: quantityChange });
     } catch (error) {
         console.error('Update stock error:', error);
         res.status(500).json({ error: 'Internal server error' });

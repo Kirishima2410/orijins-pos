@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { format } from 'date-fns';
 import { expensesAPI } from '../../utils/api';
 
 interface Expense {
@@ -39,7 +40,8 @@ const Expenses: React.FC = () => {
     }
   };
 
-  useEffect(() => { load(); // eslint-disable-next-line
+  useEffect(() => {
+    load(); // eslint-disable-next-line
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -94,13 +96,13 @@ const Expenses: React.FC = () => {
         <div className="card-body">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <input className="input" placeholder="Search description/category" value={filters.search}
-                   onChange={(e)=>setFilters({ ...filters, search: e.target.value })} />
-            <select className="input" value={filters.category} onChange={(e)=>setFilters({ ...filters, category: e.target.value })}>
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+            <select className="input" value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })}>
               <option value="">All categories</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input type="date" className="input" value={filters.date_from} onChange={(e)=>setFilters({ ...filters, date_from: e.target.value })} />
-            <input type="date" className="input" value={filters.date_to} onChange={(e)=>setFilters({ ...filters, date_to: e.target.value })} />
+            <input type="date" className="input" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} />
+            <input type="date" className="input" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} />
             <button className="btn btn-primary" onClick={load} disabled={loading}>Apply</button>
           </div>
         </div>
@@ -127,13 +129,13 @@ const Expenses: React.FC = () => {
             <tbody className="table-body">
               {items.map(exp => (
                 <tr key={exp.id} className="table-row">
-                  <td className="table-cell">{exp.expense_date}</td>
+                  <td className="table-cell">{format(new Date(exp.expense_date), 'MMM dd, yyyy')}</td>
                   <td className="table-cell">{exp.description}</td>
                   <td className="table-cell">{exp.category || '-'}</td>
                   <td className="table-cell">₱{exp.amount.toFixed(2)}</td>
                   <td className="table-cell text-right space-x-2">
-                    <button className="btn btn-outline btn-sm" onClick={()=>startEdit(exp)}>Edit</button>
-                    <button className="btn btn-danger btn-sm" onClick={()=>onDelete(exp.id)}>Delete</button>
+                    <button className="btn btn-outline btn-sm" onClick={() => startEdit(exp)}>Edit</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => onDelete(exp.id)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -152,24 +154,24 @@ const Expenses: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="label">Description</label>
-              <input className="input" value={form.description} onChange={(e)=>setForm({ ...form, description: e.target.value })} required />
+              <input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
             </div>
             <div>
               <label className="label">Category</label>
-              <input className="input" value={form.category} onChange={(e)=>setForm({ ...form, category: e.target.value })} />
+              <input className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} />
             </div>
             <div>
               <label className="label">Amount</label>
-              <input type="number" step="0.01" min="0.01" className="input" value={form.amount} onChange={(e)=>setForm({ ...form, amount: e.target.value })} required />
+              <input type="number" step="0.01" min="0.01" className="input" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
             </div>
             <div>
               <label className="label">Date</label>
-              <input type="date" className="input" value={form.expense_date} onChange={(e)=>setForm({ ...form, expense_date: e.target.value })} required />
+              <input type="date" className="input" value={form.expense_date} onChange={(e) => setForm({ ...form, expense_date: e.target.value })} required />
             </div>
           </div>
           <div className="flex items-center gap-3">
             <button type="submit" className="btn btn-primary">{editingId ? 'Update' : 'Add Expense'}</button>
-            {editingId && <button type="button" className="btn btn-outline" onClick={()=>{ setEditingId(null); setForm({ ...emptyForm }); }}>Cancel</button>}
+            {editingId && <button type="button" className="btn btn-outline" onClick={() => { setEditingId(null); setForm({ ...emptyForm }); }}>Cancel</button>}
           </div>
         </form>
       </div>
