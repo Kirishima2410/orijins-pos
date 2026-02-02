@@ -56,16 +56,16 @@ const StaffDashboard: React.FC = () => {
     {
       name: "Today's Sales",
       value: `₱${overview.today_sales.total_revenue.toFixed(2)}`,
-      change: '+12%',
-      changeType: 'increase' as const,
+      change: null,
+      changeType: null,
       icon: CurrencyDollarIcon,
       color: 'bg-success-500',
     },
     {
-      name: "Total Orders",
+      name: "Total Orders for Today",
       value: overview.today_sales.total_orders.toString(),
-      change: '+8%',
-      changeType: 'increase' as const,
+      change: null,
+      changeType: null,
       icon: ShoppingCartIcon,
       color: 'bg-primary-500',
     },
@@ -97,40 +97,40 @@ const StaffDashboard: React.FC = () => {
         </p>
       </div>
 
-	  {/* Stats Grid */}
-	  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-		{stats.map((stat) => (
-		  <div key={stat.name} className="card h-full">
-			<div className="card-body h-full">
-			  <div className="flex items-center gap-4 h-full">
-				<div className={`flex-shrink-0 p-3 rounded-lg ${stat.color} flex items-center justify-center`}>
-				  <stat.icon className="w-6 h-6 text-white" />
-				</div>
-				<div className="flex-1 min-w-0">
-				  <p className="text-sm font-medium text-gray-600 truncate">{stat.name}</p>
-				  <div className="mt-1 flex items-center gap-2">
-					<p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
-					{stat.change && (
-					  <div className="flex items-center text-sm">
-						{stat.changeType === 'increase' ? (
-						  <ArrowTrendingUpIcon className="w-4 h-4 text-success-500" />
-						) : (
-						  <ArrowTrendingDownIcon className="w-4 h-4 text-danger-500" />
-						)}
-						<span
-						  className={`${stat.changeType === 'increase' ? 'text-success-600' : 'text-danger-600'} ml-1`}
-						>
-						  {stat.change}
-						</span>
-					  </div>
-					)}
-				  </div>
-				</div>
-			  </div>
-			</div>
-		  </div>
-		))}
-	  </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {stats.map((stat) => (
+          <div key={stat.name} className="card h-full">
+            <div className="card-body h-full">
+              <div className="flex items-center gap-4 h-full">
+                <div className={`flex-shrink-0 p-3 rounded-lg ${stat.color} flex items-center justify-center`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-600 truncate">{stat.name}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                    {stat.change && (
+                      <div className="flex items-center text-sm">
+                        {stat.changeType === 'increase' ? (
+                          <ArrowTrendingUpIcon className="w-4 h-4 text-success-500" />
+                        ) : (
+                          <ArrowTrendingDownIcon className="w-4 h-4 text-danger-500" />
+                        )}
+                        <span
+                          className={`${stat.changeType === 'increase' ? 'text-success-600' : 'text-danger-600'} ml-1`}
+                        >
+                          {stat.change}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -161,13 +161,12 @@ const StaffDashboard: React.FC = () => {
                     <div className="text-right">
                       <p className="font-medium text-gray-900">₱{order.total_amount.toFixed(2)}</p>
                       <span
-                        className={`badge ${
-                          order.status === 'completed'
+                        className={`badge ${order.status === 'completed'
                             ? 'badge-success'
                             : order.status === 'pending'
-                            ? 'badge-warning'
-                            : 'badge-info'
-                        }`}
+                              ? 'badge-warning'
+                              : 'badge-info'
+                          }`}
                       >
                         {order.status}
                       </span>
@@ -225,9 +224,8 @@ const StaffDashboard: React.FC = () => {
               {overview.payment_breakdown.map((payment) => (
                 <div key={payment.payment_method} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center">
-                    <div className={`w-4 h-4 rounded-full mr-3 ${
-                      payment.payment_method === 'cash' ? 'bg-green-500' : 'bg-blue-500'
-                    }`}></div>
+                    <div className={`w-4 h-4 rounded-full mr-3 ${payment.payment_method === 'cash' ? 'bg-green-500' : 'bg-blue-500'
+                      }`}></div>
                     <div>
                       <p className="font-medium text-gray-900 capitalize">{payment.payment_method}</p>
                       <p className="text-sm text-gray-600">{payment.count} orders</p>

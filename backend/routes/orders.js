@@ -40,7 +40,7 @@ router.post('/', [
     }
 
     const connection = await pool.getConnection();
-    
+
     try {
         await connection.beginTransaction();
 
@@ -67,7 +67,7 @@ router.post('/', [
             }
 
             const menuItem = menuItems[0];
-            
+
             if (!menuItem.is_available) {
                 throw new Error(`Menu item "${menuItem.name}" is not available`);
             }
@@ -217,6 +217,16 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin', 'cashier'])],
             params.push(like, like);
         }
 
+        const { startDate, endDate } = req.query;
+        if (startDate) {
+            whereClauses.push('DATE(created_at) >= ?');
+            params.push(startDate);
+        }
+        if (endDate) {
+            whereClauses.push('DATE(created_at) <= ?');
+            params.push(endDate);
+        }
+
         const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
         const listSQL = `SELECT * FROM orders ${whereSQL} ORDER BY created_at DESC LIMIT 100`;
@@ -351,7 +361,7 @@ router.post('/:id/void', [
     body('admin_password').notEmpty().withMessage('Admin password is required')
 ], async (req, res) => {
     const connection = await pool.getConnection();
-    
+
     try {
         await connection.beginTransaction();
 
@@ -376,7 +386,7 @@ router.post('/:id/void', [
         const admin = admins[0];
         const { comparePassword } = require('../config/auth');
         const isPasswordValid = await comparePassword(admin_password, admin.password_hash);
-        
+
         if (!isPasswordValid) {
             return res.status(401).json({ error: 'Invalid admin credentials' });
         }

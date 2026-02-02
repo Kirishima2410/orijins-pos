@@ -7,7 +7,9 @@ const router = express.Router();
 // Get dashboard overview data
 router.get('/overview', [authenticateToken, requireRole(['owner', 'admin', 'cashier'])], async (req, res) => {
     try {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const offset = now.getTimezoneOffset();
+        const today = new Date(now.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
 
         // Today's sales
         const [todaySales] = await pool.execute(
@@ -236,8 +238,12 @@ router.get('/activity', [authenticateToken, requireRole(['owner', 'admin', 'cash
 // Get quick stats for today
 router.get('/quick-stats', [authenticateToken, requireRole(['owner', 'admin', 'cashier'])], async (req, res) => {
     try {
-        const today = new Date().toISOString().split('T')[0];
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const now = new Date();
+        const offset = now.getTimezoneOffset();
+        const today = new Date(now.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
+
+        const yesterdayDate = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+        const yesterday = new Date(yesterdayDate.getTime() - (offset * 60 * 1000)).toISOString().split('T')[0];
 
         // Today's stats
         const [todayStats] = await pool.execute(
@@ -262,15 +268,15 @@ router.get('/quick-stats', [authenticateToken, requireRole(['owner', 'admin', 'c
         );
 
         // Calculate percentage changes
-        const ordersChange = yesterdayStats[0].orders > 0 
+        const ordersChange = yesterdayStats[0].orders > 0
             ? ((todayStats[0].orders - yesterdayStats[0].orders) / yesterdayStats[0].orders * 100)
             : 0;
-        
-        const revenueChange = yesterdayStats[0].revenue > 0 
+
+        const revenueChange = yesterdayStats[0].revenue > 0
             ? ((todayStats[0].revenue - yesterdayStats[0].revenue) / yesterdayStats[0].revenue * 100)
             : 0;
 
-        const avgOrderChange = yesterdayStats[0].avg_order_value > 0 
+        const avgOrderChange = yesterdayStats[0].avg_order_value > 0
             ? ((todayStats[0].avg_order_value - yesterdayStats[0].avg_order_value) / yesterdayStats[0].avg_order_value * 100)
             : 0;
 

@@ -26,6 +26,8 @@ const OrderManagement: React.FC = () => {
     status: '',
     payment_method: '',
     search: '',
+    startDate: '',
+    endDate: '',
   });
   const [voidForm, setVoidForm] = useState({
     void_reason: '',
@@ -295,9 +297,31 @@ const OrderManagement: React.FC = () => {
               <option value="gcash">GCash</option>
             </select>
 
+            {/* Start Date Filter */}
+            <div className="form-control">
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                className="input w-full"
+                placeholder="Start Date"
+              />
+            </div>
+
+            {/* End Date Filter */}
+            <div className="form-control">
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                className="input w-full"
+                placeholder="End Date"
+              />
+            </div>
+
             {/* Clear Filters */}
             <button
-              onClick={() => setFilters({ status: '', payment_method: '', search: '' })}
+              onClick={() => setFilters({ status: '', payment_method: '', search: '', startDate: '', endDate: '' })}
               className="btn btn-outline"
             >
               <FunnelIcon className="w-4 h-4 mr-2" />
@@ -316,15 +340,15 @@ const OrderManagement: React.FC = () => {
               const list = orders.filter((o) => {
                 const matchesStatus = f.status
                   ? (f.status === 'voided'
-                      ? (o.is_voided || o.status === 'voided')
-                      : o.status === f.status)
+                    ? (o.is_voided || o.status === 'voided')
+                    : o.status === f.status)
                   : true;
                 const matchesPayment = f.payment_method
                   ? (o.payment_method || '').toLowerCase() === f.payment_method.toLowerCase()
                   : true;
                 const matchesSearch = f.search
                   ? (o.order_number?.toLowerCase().includes(f.search.toLowerCase()) ||
-                     (o.customer_name || '').toLowerCase().includes(f.search.toLowerCase()))
+                    (o.customer_name || '').toLowerCase().includes(f.search.toLowerCase()))
                   : true;
                 return matchesStatus && matchesPayment && matchesSearch;
               });
@@ -358,92 +382,92 @@ const OrderManagement: React.FC = () => {
                     : true;
                   const matchesSearch = f.search
                     ? (o.order_number?.toLowerCase().includes(f.search.toLowerCase()) ||
-                       (o.customer_name || '').toLowerCase().includes(f.search.toLowerCase()))
+                      (o.customer_name || '').toLowerCase().includes(f.search.toLowerCase()))
                     : true;
                   return matchesStatus && matchesPayment && matchesSearch;
                 })
                 .map((order) => (
-                <tr key={order.id} className="table-row">
-                  <td className="table-cell font-mono text-sm">
-                    {order.order_number}
-                  </td>
-                  <td className="table-cell">
-                    {order.customer_name || 'Walk-in'}
-                  </td>
-                  <td className="table-cell">
-                    <span className="text-sm text-gray-600">
-                      {order.item_count} item{order.item_count !== 1 ? 's' : ''}
-                    </span>
-                  </td>
-                  <td className="table-cell font-medium">
-                    ₱{order.total_amount.toFixed(2)}
-                  </td>
-                  <td className="table-cell">
-                    <span className="capitalize">{order.payment_method}</span>
-                  </td>
-                  <td className="table-cell">
-                    <span className={`badge flex items-center w-fit ${getStatusColor(order.status)}`}>
-                      {getStatusIcon(order.status)}
-                      <span className="ml-1 capitalize">{order.status}</span>
-                    </span>
-                  </td>
-                  <td className="table-cell text-sm text-gray-600">
-                    {new Date(order.created_at).toLocaleTimeString()}
-                  </td>
-                  <td className="table-cell">
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleOpenOrderDetails(order)}
-                        className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200"
-                        title="View Details"
-                      >
-                        <EyeIcon className="w-4 h-4" />
-                      </button>
-                      
-                      {/* Status Update Buttons */}
-                      {order.status === 'pending' && (
+                  <tr key={order.id} className="table-row">
+                    <td className="table-cell font-mono text-sm">
+                      {order.order_number}
+                    </td>
+                    <td className="table-cell">
+                      {order.customer_name || 'Walk-in'}
+                    </td>
+                    <td className="table-cell">
+                      <span className="text-sm text-gray-600">
+                        {order.item_count} item{order.item_count !== 1 ? 's' : ''}
+                      </span>
+                    </td>
+                    <td className="table-cell font-medium">
+                      ₱{order.total_amount.toFixed(2)}
+                    </td>
+                    <td className="table-cell">
+                      <span className="capitalize">{order.payment_method}</span>
+                    </td>
+                    <td className="table-cell">
+                      <span className={`badge flex items-center w-fit ${getStatusColor(order.status)}`}>
+                        {getStatusIcon(order.status)}
+                        <span className="ml-1 capitalize">{order.status}</span>
+                      </span>
+                    </td>
+                    <td className="table-cell text-sm text-gray-600">
+                      {new Date(order.created_at).toLocaleTimeString()}
+                    </td>
+                    <td className="table-cell">
+                      <div className="flex items-center space-x-2">
                         <button
-                          onClick={() => handleStatusUpdate(order.id, 'in_progress')}
-                          className="btn btn-sm btn-primary"
+                          onClick={() => handleOpenOrderDetails(order)}
+                          className="p-2 text-gray-400 hover:text-primary-600 transition-colors duration-200"
+                          title="View Details"
                         >
-                          Start
+                          <EyeIcon className="w-4 h-4" />
                         </button>
-                      )}
-                      
-                      {order.status === 'in_progress' && (
-                        <button
-                          onClick={() => handleStatusUpdate(order.id, 'ready')}
-                          className="btn btn-sm btn-success"
-                        >
-                          Ready
-                        </button>
-                      )}
-                      
-                      {order.status === 'ready' && (
-                        <button
-                          onClick={() => handleStatusUpdate(order.id, 'completed')}
-                          className="btn btn-sm btn-success"
-                        >
-                          Complete
-                        </button>
-                      )}
-                      
-                      {/* Void Button (Admin only) */}
-                      {!order.is_voided && ['pending', 'in_progress'].includes(order.status) && (user?.role === 'owner' || user?.role === 'admin') && (
-                        <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowVoidModal(true);
-                          }}
-                          className="btn btn-sm btn-danger"
-                        >
-                          Void
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+
+                        {/* Status Update Buttons */}
+                        {order.status === 'pending' && (
+                          <button
+                            onClick={() => handleStatusUpdate(order.id, 'in_progress')}
+                            className="btn btn-sm btn-primary"
+                          >
+                            Start
+                          </button>
+                        )}
+
+                        {order.status === 'in_progress' && (
+                          <button
+                            onClick={() => handleStatusUpdate(order.id, 'ready')}
+                            className="btn btn-sm btn-success"
+                          >
+                            Ready
+                          </button>
+                        )}
+
+                        {order.status === 'ready' && (
+                          <button
+                            onClick={() => handleStatusUpdate(order.id, 'completed')}
+                            className="btn btn-sm btn-success"
+                          >
+                            Complete
+                          </button>
+                        )}
+
+                        {/* Void Button (Admin only) */}
+                        {!order.is_voided && ['pending', 'in_progress'].includes(order.status) && (user?.role === 'owner' || user?.role === 'admin') && (
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowVoidModal(true);
+                            }}
+                            className="btn btn-sm btn-danger"
+                          >
+                            Void
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -455,7 +479,7 @@ const OrderManagement: React.FC = () => {
           <ExclamationTriangleIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
           <p className="text-gray-600">
-            {Object.values(filters).some(f => f) 
+            {Object.values(filters).some(f => f)
               ? 'Try adjusting your filters to see more orders.'
               : 'No orders have been placed yet.'}
           </p>
@@ -477,7 +501,7 @@ const OrderManagement: React.FC = () => {
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -497,7 +521,7 @@ const OrderManagement: React.FC = () => {
                   <p className="text-gray-900">{new Date(selectedOrder.created_at).toLocaleString()}</p>
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-sm font-medium text-gray-600">Items</label>
                 <div className="mt-2 space-y-2">
@@ -561,7 +585,7 @@ const OrderManagement: React.FC = () => {
                     <div>CHANGE AMOUNT: {formatMoney(0)}</div>
                   </div>
                   <div className="border-t border-dashed my-2"></div>
-                  <div className="text-center text-xs">Acknowledgement Receipt<br/>Thank you!</div>
+                  <div className="text-center text-xs">Acknowledgement Receipt<br />Thank you!</div>
                 </div>
               </div>
             </div>
@@ -582,7 +606,7 @@ const OrderManagement: React.FC = () => {
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="label">Void Reason</label>
@@ -594,7 +618,7 @@ const OrderManagement: React.FC = () => {
                   rows={3}
                 />
               </div>
-              
+
               <div>
                 <label className="label">Admin Username</label>
                 <input
@@ -605,7 +629,7 @@ const OrderManagement: React.FC = () => {
                   className="input"
                 />
               </div>
-              
+
               <div>
                 <label className="label">Admin Password</label>
                 <input
@@ -617,7 +641,7 @@ const OrderManagement: React.FC = () => {
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowVoidModal(false)}
