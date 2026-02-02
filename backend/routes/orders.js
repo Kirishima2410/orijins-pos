@@ -32,7 +32,8 @@ router.post('/', [
     body('items.*.menu_item_id').custom((v) => Number.isInteger(Number(v))).withMessage('Invalid menu item ID'),
     body('items.*.quantity').custom((v) => Number.isInteger(Number(v)) && Number(v) >= 1).withMessage('Quantity must be at least 1'),
     body('payment_method').isIn(['cash', 'gcash']).withMessage('Invalid payment method'),
-    body('customer_name').optional({ nullable: true }).isString().withMessage('Customer name must be a string')
+    body('customer_name').optional({ nullable: true }).isString().withMessage('Customer name must be a string'),
+    body('table_number').optional({ nullable: true }).isString().withMessage('Table number must be a string')
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -44,7 +45,7 @@ router.post('/', [
     try {
         await connection.beginTransaction();
 
-        const { items, payment_method, customer_name } = req.body;
+        const { items, payment_method, customer_name, table_number } = req.body;
         const normalizedItems = items.map((i) => ({
             menu_item_id: Number(i.menu_item_id),
             menu_item_variant_id: i.menu_item_variant_id ? Number(i.menu_item_variant_id) : null,
@@ -115,8 +116,8 @@ router.post('/', [
 
         // Create order
         const [orderResult] = await connection.execute(
-            'INSERT INTO orders (order_number, customer_name, total_amount, payment_method) VALUES (?, ?, ?, ?)',
-            [orderNumber, customer_name || null, totalAmount, payment_method]
+            'INSERT INTO orders (order_number, customer_name, table_number, total_amount, payment_method) VALUES (?, ?, ?, ?, ?)',
+            [orderNumber, customer_name || null, table_number || null, totalAmount, payment_method]
         );
 
         const orderId = orderResult.insertId;
@@ -180,6 +181,26 @@ router.post('/', [
         res.status(400).json({ error: error.message });
     } finally {
         connection.release();
+    }
+});
+
+// Public endpoint to get order status
+router.get('/public/:orderNumber', async (req, res) => {
+    try {
+        const { orderNumber } = req.params;
+        const [orders] = await pool.execute(
+            'SELECT order_number, status, payment_method, total_amount, created_at, updated_at FROM orders WHERE order_number = ?',
+            [orderNumber]
+        );
+
+        if (orders.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        res.json(orders[0]);
+    } catch (error) {
+        console.error('Get public order error:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

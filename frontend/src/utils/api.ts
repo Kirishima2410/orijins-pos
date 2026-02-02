@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.REACT_APP_API_URL || '/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ api.interceptors.response.use(
     } else if (!error.response) {
       toast.error('Network error. Please check your connection.');
     }
-    
+
     return Promise.reject(error);
   }
 );
@@ -70,13 +70,13 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (credentials: { username: string; password: string }) =>
     api.post('/auth/login', credentials),
-  
+
   verify: () =>
     api.get('/auth/verify'),
-  
+
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.post('/auth/change-password', data),
-  
+
   logout: () =>
     api.post('/auth/logout'),
 };
@@ -85,38 +85,38 @@ export const menuAPI = {
   // Public endpoints
   getCategories: () =>
     api.get('/menu/categories'),
-  
+
   getItems: (params?: { category_id?: number }) =>
     api.get('/menu/items', { params }),
-  
+
   getItem: (id: number) =>
     api.get(`/menu/items/${id}`),
-  
+
   // Admin endpoints
   getAdminCategories: () =>
     api.get('/menu/admin/categories'),
-  
+
   createCategory: (data: { name: string; description?: string; display_order?: number }) =>
     api.post('/menu/admin/categories', data),
-  
+
   updateCategory: (id: number, data: { name: string; description?: string; display_order?: number }) =>
     api.put(`/menu/admin/categories/${id}`, data),
-  
+
   deleteCategory: (id: number) =>
     api.delete(`/menu/admin/categories/${id}`),
-  
+
   getAdminItems: () =>
     api.get('/menu/admin/items'),
-  
+
   createItem: (data: any) =>
     api.post('/menu/admin/items', data),
-  
+
   updateItem: (id: number, data: any) =>
     api.put(`/menu/admin/items/${id}`, data),
-  
+
   updateStock: (id: number, data: { quantity: number; action: string; notes?: string }) =>
     api.patch(`/menu/admin/items/${id}/stock`, data),
-  
+
   deleteItem: (id: number) =>
     api.delete(`/menu/admin/items/${id}`),
 };
@@ -124,48 +124,51 @@ export const menuAPI = {
 export const ordersAPI = {
   create: (data: any) =>
     api.post('/orders', data),
-  
+
   getAll: (params?: any) =>
     api.get('/orders', { params }),
-  
+
   getById: (id: number) =>
     api.get(`/orders/${id}`),
-  
+
   updateStatus: (id: number, status: string) =>
     api.patch(`/orders/${id}/status`, { status }),
-  
+
   void: (id: number, data: { void_reason: string; admin_username: string; admin_password: string }) =>
     api.post(`/orders/${id}/void`, data),
-  
+
   getTodayStats: () =>
     api.get('/orders/stats/today'),
+
+  getPublicStatus: (orderNumber: string) =>
+    api.get(`/orders/public/${orderNumber}`),
 };
 
 export const usersAPI = {
   getAll: (params?: any) =>
     api.get('/users', { params }),
-  
+
   getById: (id: number) =>
     api.get(`/users/${id}`),
-  
+
   create: (data: any) =>
     api.post('/users', data),
-  
+
   update: (id: number, data: any) =>
     api.put(`/users/${id}`, data),
-  
+
   resetPassword: (id: number, data: { new_password: string }) =>
     api.post(`/users/${id}/reset-password`, data),
-  
+
   delete: (id: number) =>
     api.delete(`/users/${id}`),
-  
+
   getRoles: () =>
     api.get('/users/roles/list'),
-  
+
   getProfile: () =>
     api.get('/users/profile/me'),
-  
+
   updateProfile: (data: { username: string; email: string }) =>
     api.put('/users/profile/me', data),
 };
@@ -187,16 +190,16 @@ export const expensesAPI = {
 export const dashboardAPI = {
   getOverview: () =>
     api.get('/dashboard/overview'),
-  
+
   getSalesChart: (period?: string) =>
     api.get('/dashboard/sales-chart', { params: { period } }),
-  
+
   getInventory: () =>
     api.get('/dashboard/inventory'),
-  
+
   getActivity: (limit?: number) =>
     api.get('/dashboard/activity', { params: { limit } }),
-  
+
   getQuickStats: () =>
     api.get('/dashboard/quick-stats'),
 };
@@ -204,16 +207,16 @@ export const dashboardAPI = {
 export const reportsAPI = {
   getSales: (params: { date_from: string; date_to: string; group_by?: string }) =>
     api.get('/reports/sales', { params }),
-  
+
   getOrders: (params: { date_from: string; date_to: string }) =>
     api.get('/reports/orders', { params }),
-  
+
   getTopItems: (params: { date_from: string; date_to: string; limit?: number }) =>
     api.get('/reports/top-items', { params }),
-  
+
   getInventory: () =>
     api.get('/reports/inventory'),
-  
+
   getAuditLogs: (params?: any) =>
     api.get('/reports/audit-logs', { params }),
 };
@@ -221,21 +224,38 @@ export const reportsAPI = {
 export const settingsAPI = {
   getAll: () =>
     api.get('/settings'),
-  
+
   getByKey: (key: string) =>
     api.get(`/settings/${key}`),
-  
+
   update: (key: string, data: { value: any }) =>
     api.put(`/settings/${key}`, data),
-  
+
   updateMultiple: (data: { settings: Record<string, any> }) =>
     api.put('/settings', data),
-  
+
   getShopInfo: () =>
     api.get('/settings/public/shop-info'),
-  
+
   reset: () =>
     api.post('/settings/reset'),
+};
+
+export const tablesAPI = {
+  getAll: () =>
+    api.get('/tables'),
+
+  getById: (id: number) =>
+    api.get(`/tables/${id}`),
+
+  create: (data: { table_number: string; capacity?: number; status?: string }) =>
+    api.post('/tables', data),
+
+  update: (id: number, data: { table_number: string; capacity?: number; status?: string; is_active?: boolean }) =>
+    api.put(`/tables/${id}`, data),
+
+  delete: (id: number) =>
+    api.delete(`/tables/${id}`),
 };
 
 export default api;

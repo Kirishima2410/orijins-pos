@@ -12,34 +12,35 @@ const CustomerOrderConfirmation: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
     if (orderNumber) {
       loadOrderDetails();
+      // Poll every 5 seconds
+      intervalId = setInterval(loadOrderDetails, 5000);
     }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [orderNumber]);
 
   const loadOrderDetails = async () => {
     if (!orderNumber) return;
 
     try {
-      setLoading(true);
-      // Note: In a real app, you might want to create a public endpoint for order confirmation
-      // For now, we'll simulate this with the order number
-      setOrder({
-        id: 1,
-        order_number: orderNumber,
-        total_amount: 0, // This would come from the API
-        payment_method: 'cash',
-        status: 'pending',
-        is_voided: false,
-        items: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      // Don't set loading on poll updates to avoid UI flicker
+      // Only set loading on initial fetch if we don't have order data yet
+      if (!order) setLoading(true);
+
+      const response = await ordersAPI.getPublicStatus(orderNumber);
+      setOrder(response.data);
     } catch (error) {
       console.error('Error loading order details:', error);
-      toast.error('Failed to load order details');
+      // Only show error toast on initial load failure
+      if (!order) toast.error('Failed to load order details');
     } finally {
-      setLoading(false);
+      if (!order) setLoading(false);
     }
   };
 
@@ -85,7 +86,13 @@ const CustomerOrderConfirmation: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status:</span>
-                  <span className="badge badge-info capitalize">{order.status}</span>
+                  <span className={`badge ${order.status === 'completed' ? 'badge-success' :
+                      order.status === 'ready' ? 'badge-primary' :
+                        order.status === 'in_progress' ? 'badge-warning' :
+                          'badge-info'
+                    } capitalize`}>{
+                      order.status === 'in_progress' ? 'Preparing' : order.status
+                    }</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Order Time:</span>
@@ -114,7 +121,7 @@ const CustomerOrderConfirmation: React.FC = () => {
                   <p className="text-gray-600 text-sm">Our team will start preparing your order immediately.</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
                   <span className="text-xs font-medium text-primary-600">2</span>
@@ -124,7 +131,7 @@ const CustomerOrderConfirmation: React.FC = () => {
                   <p className="text-gray-600 text-sm">We'll notify you when your order is ready for pickup.</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0 w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
                   <span className="text-xs font-medium text-primary-600">3</span>

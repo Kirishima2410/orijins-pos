@@ -8,7 +8,7 @@ import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 
 const CustomerCheckout: React.FC = () => {
-  const { items, updateQuantity, removeItem, getTotalAmount, clearCart } = useCart();
+  const { items, updateQuantity, removeItem, getTotalAmount, clearCart, tableNumber } = useCart();
   const navigate = useNavigate();
   const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
@@ -94,10 +94,11 @@ const CustomerCheckout: React.FC = () => {
         })),
         payment_method: paymentMethod,
         customer_name: customerName.trim() || null,
+        table_number: tableNumber || null,
       };
 
       const response = await ordersAPI.create(orderData);
-      
+
       if (response.data.order) {
         clearCart();
         toast.success('Order placed successfully!');
@@ -142,7 +143,7 @@ const CustomerCheckout: React.FC = () => {
                       <h3 className="font-medium text-gray-900">{item.menu_item.name} {item.variant?.size_label ? `(${item.variant.size_label})` : ''}</h3>
                       <p className="text-sm text-gray-600">₱{(item.variant?.price ?? item.menu_item.price).toFixed(2)} each</p>
                     </div>
-                    
+
                     <div className="flex items-center space-x-3">
                       {/* Quantity Controls */}
                       <div className="flex items-center space-x-2">
@@ -160,13 +161,13 @@ const CustomerCheckout: React.FC = () => {
                           <PlusIcon className="w-4 h-4 text-gray-600" />
                         </button>
                       </div>
-                      
+
                       <div className="text-right">
                         <p className="font-medium text-gray-900">
                           ₱{(((item.variant?.price ?? item.menu_item.price)) * item.quantity).toFixed(2)}
                         </p>
                       </div>
-                      
+
                       <button
                         onClick={() => handleRemoveItem(item.menu_item.id, item.variant?.id)}
                         className="p-2 text-gray-400 hover:text-danger-600 transition-colors duration-200"
@@ -243,7 +244,7 @@ const CustomerCheckout: React.FC = () => {
                   >
                     {showQR ? 'Hide' : 'Show'} GCash QR Code
                   </button>
-                  
+
                   {showQR && gcashQR && (
                     <div className="mt-4 text-center">
                       <div className="inline-block p-4 bg-white border border-gray-200 rounded-lg">

@@ -10,6 +10,8 @@ interface CartContextType {
   getTotalItems: () => number;
   getTotalAmount: () => number;
   getItemQuantity: (menuItemId: number, variantId?: number) => number;
+  tableNumber: string | null;
+  setTableNumber: (tableNumber: string | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -20,10 +22,13 @@ interface CartProviderProps {
 
 export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [tableNumber, setTableNumber] = useState<string | null>(null);
 
-  // Load cart from localStorage on mount
+  // Load cart and tableNumber from localStorage on mount
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
+    const savedTableNumber = localStorage.getItem('tableNumber');
+
     if (savedCart) {
       try {
         const parsedCart = JSON.parse(savedCart);
@@ -33,6 +38,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         localStorage.removeItem('cart');
       }
     }
+
+    if (savedTableNumber) {
+      setTableNumber(savedTableNumber);
+    }
   }, []);
 
   // Save cart to localStorage whenever items change
@@ -40,11 +49,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
 
+  // Save tableNumber to localStorage whenever it changes
+  useEffect(() => {
+    if (tableNumber) {
+      localStorage.setItem('tableNumber', tableNumber);
+    } else {
+      localStorage.removeItem('tableNumber');
+    }
+  }, [tableNumber]);
+
   // Add item to cart
   const addItem = (menuItem: MenuItem, quantity: number = 1, variant?: MenuItemVariant) => {
     setItems(prevItems => {
       const existingItem = prevItems.find(item => item.menu_item.id === menuItem.id && (item.variant?.id || 0) === (variant?.id || 0));
-      
+
       if (existingItem) {
         // Update existing item quantity
         return prevItems.map(item =>
@@ -61,7 +79,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Remove item from cart
   const removeItem = (menuItemId: number, variantId?: number) => {
-    setItems(prevItems => 
+    setItems(prevItems =>
       prevItems.filter(item => !(item.menu_item.id === menuItemId && (item.variant?.id || 0) === (variantId || 0)))
     );
   };
@@ -113,6 +131,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     getTotalItems,
     getTotalAmount,
     getItemQuantity,
+    tableNumber,
+    setTableNumber,
   };
 
   return (

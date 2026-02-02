@@ -7,6 +7,7 @@ import { CartProvider } from './contexts/CartContext';
 import CustomerMenu from './pages/customer/Menu';
 import CustomerCheckout from './pages/customer/Checkout';
 import CustomerOrderConfirmation from './pages/customer/OrderConfirmation';
+import CustomerLanding from './pages/customer/CustomerLanding';
 
 // Staff portal pages
 import StaffLogin from './pages/staff/Login';
@@ -18,6 +19,7 @@ import UserManagement from './pages/staff/UserManagement';
 import Reports from './pages/staff/Reports';
 import Settings from './pages/staff/Settings';
 import Expenses from './pages/staff/Expenses';
+import TableManagement from './pages/staff/TableManagement';
 
 // Layout components
 import CustomerLayout from './components/layout/CustomerLayout';
@@ -39,18 +41,20 @@ function App() {
                   <CustomerMenu />
                 </CustomerLayout>
               } />
-              
+
               <Route path="/checkout" element={
                 <CustomerLayout>
                   <CustomerCheckout />
                 </CustomerLayout>
               } />
-              
+
               <Route path="/order-confirmation/:orderNumber" element={
                 <CustomerLayout>
                   <CustomerOrderConfirmation />
                 </CustomerLayout>
               } />
+
+              <Route path="/menu/table/:tableNumber" element={<CustomerLanding />} />
 
               {/* Staff login */}
               <Route path="/staff/login" element={<StaffLogin />} />
@@ -63,7 +67,7 @@ function App() {
                   </StaffLayout>
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/staff/orders" element={
                 <ProtectedRoute>
                   <StaffLayout>
@@ -71,7 +75,7 @@ function App() {
                   </StaffLayout>
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/staff/pos" element={
                 <ProtectedRoute>
                   <StaffLayout>
@@ -79,7 +83,7 @@ function App() {
                   </StaffLayout>
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/staff/menu" element={
                 <ProtectedRoute>
                   <StaffLayout>
@@ -87,7 +91,7 @@ function App() {
                   </StaffLayout>
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/staff/users" element={
                 <ProtectedRoute requiredRoles={['owner', 'admin']}>
                   <StaffLayout>
@@ -95,7 +99,7 @@ function App() {
                   </StaffLayout>
                 </ProtectedRoute>
               } />
-              
+
               <Route path="/staff/reports" element={
                 <ProtectedRoute requiredRoles={['owner', 'admin']}>
                   <StaffLayout>
@@ -111,7 +115,15 @@ function App() {
                   </StaffLayout>
                 </ProtectedRoute>
               } />
-              
+
+              <Route path="/staff/tables" element={
+                <ProtectedRoute requiredRoles={['owner', 'admin']}>
+                  <StaffLayout>
+                    <TableManagement />
+                  </StaffLayout>
+                </ProtectedRoute>
+              } />
+
               <Route path="/staff/settings" element={
                 <ProtectedRoute requiredRoles={['owner', 'admin']}>
                   <StaffLayout>

@@ -60,6 +60,12 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
       roles: ['owner', 'admin'],
     },
     {
+      name: 'Tables',
+      href: '/staff/tables',
+      icon: Bars3Icon,
+      roles: ['owner', 'admin'],
+    },
+    {
       name: 'Reports',
       href: '/staff/reports',
       icon: ChartBarIcon,
@@ -95,9 +101,8 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } flex flex-col`}
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } flex flex-col`}
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-brown-200 flex-shrink-0">
@@ -127,16 +132,14 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className={`group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${
-                    isActive
-                      ? 'bg-amber-50 text-amber-900'
-                      : 'text-brown-700 hover:bg-brown-50 hover:text-brown-900'
-                  }`}
+                  className={`group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ${isActive
+                    ? 'bg-amber-50 text-amber-900'
+                    : 'text-brown-700 hover:bg-brown-50 hover:text-brown-900'
+                    }`}
                 >
                   <item.icon
-                    className={`h-5 w-5 flex-shrink-0 ${
-                      isActive ? 'text-amber-700' : 'text-brown-400 group-hover:text-brown-600'
-                    }`}
+                    className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-amber-700' : 'text-brown-400 group-hover:text-brown-600'
+                      }`}
                   />
                   <span className="truncate">{item.name}</span>
                 </Link>

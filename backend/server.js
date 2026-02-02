@@ -17,6 +17,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const reportsRoutes = require('./routes/reports');
 const settingsRoutes = require('./routes/settings');
 const expensesRoutes = require('./routes/expenses');
+const tablesRoutes = require('./routes/tables');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,8 +28,8 @@ app.use(helmet({
 }));
 
 // Rate limiting (disabled in development by default)
-const enableRateLimit = (process.env.RATE_LIMIT_ENABLED || '').toLowerCase() !== 'false' 
-    && (process.env.NODE_ENV || 'development') !== 'development' ;
+const enableRateLimit = (process.env.RATE_LIMIT_ENABLED || '').toLowerCase() !== 'false'
+    && (process.env.NODE_ENV || 'development') !== 'development';
 
 if (enableRateLimit) {
     const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000);
@@ -63,11 +64,12 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/expenses', expensesRoutes);
+app.use('/api/tables', tablesRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
+    res.json({
+        status: 'OK',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
     });
@@ -76,17 +78,17 @@ app.get('/api/health', (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    
+
     if (err.type === 'entity.parse.failed') {
         return res.status(400).json({ error: 'Invalid JSON format' });
     }
-    
+
     if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(413).json({ error: 'File too large' });
     }
-    
-    res.status(500).json({ 
-        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message 
+
+    res.status(500).json({
+        error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message
     });
 });
 
