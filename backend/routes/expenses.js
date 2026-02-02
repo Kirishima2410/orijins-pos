@@ -47,7 +47,7 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
         const [rows] = await pool.execute(query, params);
 
         // totals
-        let sumQuery = 'SELECT SUM(amount) AS total FROM expenses WHERE 1=1';
+        let sumQuery = 'SELECT SUM(amount) AS total, COUNT(*) as count FROM expenses WHERE 1=1';
         const sumParams = [];
         if (search) { sumQuery += ' AND (description LIKE ? OR category LIKE ?)'; sumParams.push(`%${search}%`, `%${search}%`); }
         if (category) { sumQuery += ' AND category = ?'; sumParams.push(category); }
@@ -60,6 +60,7 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
         res.json({
             expenses: rows,
             total_amount: sumRows[0].total || 0,
+            total_count: sumRows[0].count || 0,
             pagination: { page: Number(page), limit: Number(limit) }
         });
     } catch (err) {

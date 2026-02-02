@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { expensesAPI } from '../../utils/api';
 
 interface Expense {
@@ -23,25 +24,30 @@ const Expenses: React.FC = () => {
   const [form, setForm] = useState<any>({ ...emptyForm });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [total, setTotal] = useState<number>(0);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const limit = 20;
 
   const categories = useMemo(() => {
     const set = new Set(items.map(i => i.category).filter(Boolean) as string[]);
     return Array.from(set).sort();
   }, [items]);
 
-  const load = async () => {
+  const load = async (pageToLoad = 1) => {
     setLoading(true);
     try {
-      const { data } = await expensesAPI.getAll(filters);
+      const { data } = await expensesAPI.getAll({ ...filters, page: pageToLoad, limit });
       setItems(data.expenses || []);
       setTotal(data.total_amount || 0);
+      setTotalCount(data.total_count || 0);
+      setPage(pageToLoad);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    load(); // eslint-disable-next-line
+    load(1); // eslint-disable-next-line
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -65,7 +71,7 @@ const Expenses: React.FC = () => {
     }
     setForm({ ...emptyForm });
     setEditingId(null);
-    await load();
+    await load(editingId ? page : 1);
   };
 
   const startEdit = (exp: Expense) => {
@@ -81,7 +87,7 @@ const Expenses: React.FC = () => {
   const onDelete = async (id: number) => {
     if (!window.confirm('Delete this expense?')) return;
     await expensesAPI.delete(id);
-    await load();
+    await load(page);
   };
 
   return (
@@ -103,7 +109,7 @@ const Expenses: React.FC = () => {
             </select>
             <input type="date" className="input" value={filters.date_from} onChange={(e) => setFilters({ ...filters, date_from: e.target.value })} />
             <input type="date" className="input" value={filters.date_to} onChange={(e) => setFilters({ ...filters, date_to: e.target.value })} />
-            <button className="btn btn-primary" onClick={load} disabled={loading}>Apply</button>
+            <button className="btn btn-primary" onClick={() => load(1)} disabled={loading}>Apply</button>
           </div>
         </div>
       </div>
@@ -146,6 +152,34 @@ const Expenses: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalCount > 0 && (
+        <div className="flex items-center justify-between mt-4 mb-6">
+          <div className="text-sm text-brown-700">
+            Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, totalCount)} of {totalCount} results
+          </div>
+          <div className="flex gap-2">
+            <button
+              disabled={page === 1 || loading}
+              onClick={() => load(page - 1)}
+              className="btn btn-outline btn-sm p-2"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="flex items-center px-4 font-medium bg-white rounded border border-brown-200">
+              {page}
+            </span>
+            <button
+              disabled={page >= Math.ceil(totalCount / limit) || loading}
+              onClick={() => load(page + 1)}
+              className="btn btn-outline btn-sm p-2"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Form */}
       <div className="card">
