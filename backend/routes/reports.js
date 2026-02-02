@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/sales', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
     try {
         const { date_from, date_to, group_by = 'day' } = req.query;
-        
+
         if (!date_from || !date_to) {
             return res.status(400).json({ error: 'Date range is required' });
         }
@@ -106,7 +106,7 @@ router.get('/sales', [authenticateToken, requireRole(['owner', 'admin'])], async
 router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
     try {
         const { date_from, date_to } = req.query;
-        
+
         if (!date_from || !date_to) {
             return res.status(400).json({ error: 'Date range is required' });
         }
@@ -120,7 +120,7 @@ router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], asyn
                 COUNT(CASE WHEN status IN ('pending', 'in_progress', 'ready') THEN 1 END) as active_orders,
                 ROUND(AVG(CASE WHEN status = 'completed' THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END), 2) as avg_preparation_time
              FROM orders 
-             WHERE DATE(created_at) BETWEEN ? AND ? AND is_voided = FALSE`,
+             WHERE DATE(created_at) BETWEEN ? AND ?`,
             [date_from, date_to]
         );
 
@@ -129,9 +129,9 @@ router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], asyn
             `SELECT 
                 status,
                 COUNT(*) as count,
-                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM orders WHERE DATE(created_at) BETWEEN ? AND ? AND is_voided = FALSE), 2) as percentage
+                ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM orders WHERE DATE(created_at) BETWEEN ? AND ?), 2) as percentage
              FROM orders 
-             WHERE DATE(created_at) BETWEEN ? AND ? AND is_voided = FALSE
+             WHERE DATE(created_at) BETWEEN ? AND ?
              GROUP BY status`,
             [date_from, date_to, date_from, date_to]
         );
@@ -142,7 +142,7 @@ router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], asyn
                 HOUR(created_at) as hour,
                 COUNT(*) as order_count
              FROM orders 
-             WHERE DATE(created_at) BETWEEN ? AND ? AND is_voided = FALSE
+             WHERE DATE(created_at) BETWEEN ? AND ?
              GROUP BY HOUR(created_at)
              ORDER BY hour`,
             [date_from, date_to]
@@ -156,7 +156,7 @@ router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], asyn
                 COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count,
                 COUNT(CASE WHEN status = 'voided' THEN 1 END) as voided_count
              FROM orders 
-             WHERE DATE(created_at) BETWEEN ? AND ? AND is_voided = FALSE
+             WHERE DATE(created_at) BETWEEN ? AND ?
              GROUP BY DATE(created_at)
              ORDER BY date`,
             [date_from, date_to]
@@ -179,7 +179,7 @@ router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], asyn
 router.get('/top-items', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
     try {
         const { date_from, date_to, limit = 10 } = req.query;
-        
+
         if (!date_from || !date_to) {
             return res.status(400).json({ error: 'Date range is required' });
         }
@@ -201,8 +201,8 @@ router.get('/top-items', [authenticateToken, requireRole(['owner', 'admin'])], a
              WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.is_voided = FALSE AND o.status = 'completed'
              GROUP BY mi.id, mi.name, c.name
              ORDER BY total_quantity DESC
-             LIMIT ?`,
-            [date_from, date_to, parseInt(limit)]
+             LIMIT ${parseInt(limit)}`,
+            [date_from, date_to]
         );
 
         // Top selling items by revenue
@@ -222,8 +222,8 @@ router.get('/top-items', [authenticateToken, requireRole(['owner', 'admin'])], a
              WHERE DATE(o.created_at) BETWEEN ? AND ? AND o.is_voided = FALSE AND o.status = 'completed'
              GROUP BY mi.id, mi.name, c.name
              ORDER BY total_revenue DESC
-             LIMIT ?`,
-            [date_from, date_to, parseInt(limit)]
+             LIMIT ${parseInt(limit)}`,
+            [date_from, date_to]
         );
 
         // Items that didn't sell (if any)
@@ -327,7 +327,7 @@ router.get('/inventory', [authenticateToken, requireRole(['owner', 'admin'])], a
 router.get('/audit-logs', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
     try {
         const { date_from, date_to, user_id, action, page = 1, limit = 50 } = req.query;
-        
+
         let query = `
             SELECT 
                 al.*,
@@ -336,26 +336,26 @@ router.get('/audit-logs', [authenticateToken, requireRole(['owner', 'admin'])], 
             LEFT JOIN users u ON al.user_id = u.id
             WHERE 1=1
         `;
-        
+
         const params = [];
-        
+
         if (date_from && date_to) {
             query += ' AND DATE(al.created_at) BETWEEN ? AND ?';
             params.push(date_from, date_to);
         }
-        
+
         if (user_id) {
             query += ' AND al.user_id = ?';
             params.push(user_id);
         }
-        
+
         if (action) {
             query += ' AND al.action = ?';
             params.push(action);
         }
-        
+
         query += ' ORDER BY al.created_at DESC';
-        
+
         // Add pagination
         const offset = (page - 1) * limit;
         query += ' LIMIT ? OFFSET ?';
@@ -366,17 +366,17 @@ router.get('/audit-logs', [authenticateToken, requireRole(['owner', 'admin'])], 
         // Get total count
         let countQuery = 'SELECT COUNT(*) as total FROM audit_logs al WHERE 1=1';
         const countParams = [];
-        
+
         if (date_from && date_to) {
             countQuery += ' AND DATE(al.created_at) BETWEEN ? AND ?';
             countParams.push(date_from, date_to);
         }
-        
+
         if (user_id) {
             countQuery += ' AND al.user_id = ?';
             countParams.push(user_id);
         }
-        
+
         if (action) {
             countQuery += ' AND al.action = ?';
             countParams.push(action);
