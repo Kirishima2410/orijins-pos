@@ -16,7 +16,7 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
         const settingsObj = {};
         settings.forEach(setting => {
             let value = setting.setting_value;
-            
+
             // Parse JSON values
             if (setting.setting_type === 'json' && value) {
                 try {
@@ -64,7 +64,7 @@ router.get('/:key', [authenticateToken, requireRole(['owner', 'admin'])], async 
 
         const setting = settings[0];
         let value = setting.setting_value;
-        
+
         // Parse value based on type
         if (setting.setting_type === 'json' && value) {
             try {
@@ -173,7 +173,7 @@ router.put('/', [
         const { settings } = req.body;
 
         // Get all current settings to validate types
-        const [currentSettings] = await pool.execute(
+        const [currentSettings] = await pool.query(
             'SELECT * FROM settings WHERE setting_key IN (?)',
             [Object.keys(settings)]
         );
@@ -254,7 +254,7 @@ router.get('/public/shop-info', async (req, res) => {
         const shopInfo = {};
         settings.forEach(setting => {
             let value = setting.setting_value;
-            
+
             if (setting.setting_type === 'json' && value) {
                 try {
                     value = JSON.parse(value);

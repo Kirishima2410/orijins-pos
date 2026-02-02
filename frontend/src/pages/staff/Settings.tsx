@@ -43,7 +43,14 @@ const Settings: React.FC = () => {
 
     try {
       setSaving(true);
-      await settingsAPI.updateMultiple({ settings });
+
+      // Extract just the values to send to the API
+      const settingsToSave = Object.entries(settings).reduce((acc, [key, setting]) => {
+        acc[key] = setting.value;
+        return acc;
+      }, {} as Record<string, any>);
+
+      await settingsAPI.updateMultiple({ settings: settingsToSave });
       toast.success('Settings saved successfully');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -71,7 +78,7 @@ const Settings: React.FC = () => {
 
   const updateSetting = (key: keyof SettingsType, value: any) => {
     if (!settings) return;
-    
+
     setSettings({
       ...settings,
       [key]: {
@@ -154,11 +161,10 @@ const Settings: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
+              className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                   ? 'border-primary-500 text-primary-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               <tab.icon className="w-4 h-4 mr-2" />
               {tab.name}
@@ -187,7 +193,7 @@ const Settings: React.FC = () => {
                     placeholder="PHP"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">Currency Symbol</label>
                   <input
@@ -198,7 +204,7 @@ const Settings: React.FC = () => {
                     placeholder="₱"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">Tax Rate (%)</label>
                   <input
@@ -212,7 +218,7 @@ const Settings: React.FC = () => {
                     placeholder="12"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">Session Timeout (seconds)</label>
                   <input
@@ -243,7 +249,7 @@ const Settings: React.FC = () => {
                     placeholder="ORD"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">Receipt Footer</label>
                   <textarea
@@ -277,7 +283,7 @@ const Settings: React.FC = () => {
                     placeholder="Coffee Shop POS"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">Shop Address</label>
                   <textarea
@@ -288,7 +294,7 @@ const Settings: React.FC = () => {
                     placeholder="123 Main Street, City, Country"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">Phone Number</label>
                   <input
@@ -299,7 +305,7 @@ const Settings: React.FC = () => {
                     placeholder="+1-234-567-8900"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">Email Address</label>
                   <input
@@ -357,7 +363,7 @@ const Settings: React.FC = () => {
                     placeholder="+63-XXX-XXX-XXXX"
                   />
                 </div>
-                
+
                 <div>
                   <label className="label">GCash QR Code</label>
                   <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
@@ -440,14 +446,14 @@ const Settings: React.FC = () => {
                       </h3>
                       <div className="mt-2 text-sm text-blue-700">
                         <p>
-                          Changes to these settings will affect the entire system. 
+                          Changes to these settings will affect the entire system.
                           Make sure to test any changes in a safe environment before applying to production.
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="font-medium text-gray-900">Current User</p>
