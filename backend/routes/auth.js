@@ -178,4 +178,78 @@ router.post('/logout', authenticateToken, async (req, res) => {
     }
 });
 
+// Verify role endpoint (for manager/admin authorization)
+router.post('/verify-role', [
+    authenticateToken,
+    body('username').notEmpty().withMessage('Username is required'),
+    body('password').notEmpty().withMessage('Password is required'),
+    body('requiredRole').optional()
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { username, password, requiredRole } = req.body;
+
+        // Get user to verify
+        const [users] = await pool.execute(
+            'SELECT id, username, password_hash, role, is_active FROM users WHERE username = ?',
+            [username]
+        );
+
+        if (users.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const user = users[0];
+
+        if (!user.is_active) {
+            return res.status(401).json({ error: 'Account is deactivated' });
+        }
+
+        // Verify password
+        const isPasswordValid = await comparePassword(password, user.password_hash);
+        if (!isPasswordValid) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Verify role
+        // Allow 'admin', 'owner', 'manager' to authorize queries requiring 'manager'
+        // If specific requiredRole is passed, check that.
+        // For this feature, we want "Manager" or above.
+        const allowedRoles = ['admin', 'owner', 'manager'];
+        if (requiredRole && requiredRole !== 'manager') {
+            // generally strictly check if a specific role is asked, but for now we essentially want "is this a manager-level person"
+            if (user.role !== requiredRole && !['admin', 'owner'].includes(user.role)) {
+                return res.status(403).json({ error: 'Insufficient permissions' });
+            }
+        } else {
+            // Default "manager" level check
+            if (!allowedRoles.includes(user.role)) {
+                return res.status(403).json({ error: 'Insufficient permissions' });
+            }
+        }
+
+        // Log the authorization
+        await pool.execute(
+            'INSERT INTO audit_logs (user_id, action, ip_address, user_agent, details) VALUES (?, ?, ?, ?, ?)',
+            [req.user.id, 'manager_auth_verify', req.ip, req.get('User-Agent'), `Authorized by ${user.username}`]
+        );
+
+        res.json({
+            valid: true,
+            authorized_by: {
+                id: user.id,
+                username: user.username,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        console.error('Role verification error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

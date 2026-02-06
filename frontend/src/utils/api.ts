@@ -74,6 +74,9 @@ export const authAPI = {
   verify: () =>
     api.get('/auth/verify'),
 
+  verifyRole: (data: { username: string; password: string; requiredRole?: string }) =>
+    api.post('/auth/verify-role', data),
+
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     api.post('/auth/change-password', data),
 

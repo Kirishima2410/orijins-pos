@@ -33,7 +33,11 @@ router.post('/', [
     body('items.*.quantity').custom((v) => Number.isInteger(Number(v)) && Number(v) >= 1).withMessage('Quantity must be at least 1'),
     body('payment_method').isIn(['cash', 'gcash']).withMessage('Invalid payment method'),
     body('customer_name').optional({ nullable: true }).isString().withMessage('Customer name must be a string'),
-    body('table_number').optional({ nullable: true }).isString().withMessage('Table number must be a string')
+    body('table_number').optional({ nullable: true }).isString().withMessage('Table number must be a string'),
+    body('status').optional().isIn(['pending', 'in_progress', 'completed', 'ready']).withMessage('Invalid status'),
+    body('discount_amount').optional().isFloat({ min: 0 }),
+    body('cash_received').optional().isFloat({ min: 0 }),
+    body('change_amount').optional().isFloat({ min: 0 })
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -114,10 +118,21 @@ router.post('/', [
             });
         }
 
+        // Apply discount if provided
+        let finalTotalAmount = totalAmount;
+        const discountAmount = req.body.discount_amount ? Number(req.body.discount_amount) : 0.00;
+        const cashReceived = req.body.cash_received ? Number(req.body.cash_received) : 0.00;
+        const changeAmount = req.body.change_amount ? Number(req.body.change_amount) : 0.00;
+        const status = req.body.status || 'pending';
+
+        if (discountAmount > 0) {
+            finalTotalAmount = Math.max(0, totalAmount - discountAmount);
+        }
+
         // Create order
         const [orderResult] = await connection.execute(
-            'INSERT INTO orders (order_number, customer_name, table_number, total_amount, payment_method) VALUES (?, ?, ?, ?, ?)',
-            [orderNumber, customer_name || null, table_number || null, totalAmount, payment_method]
+            'INSERT INTO orders (order_number, customer_name, table_number, total_amount, discount_amount, cash_received, change_amount, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [orderNumber, customer_name || null, table_number || null, finalTotalAmount, discountAmount, cashReceived, changeAmount, payment_method, status]
         );
 
         const orderId = orderResult.insertId;
@@ -159,7 +174,7 @@ router.post('/', [
         // Create transaction record
         await connection.execute(
             'INSERT INTO transactions (order_id, amount, payment_method) VALUES (?, ?, ?)',
-            [orderId, totalAmount, payment_method]
+            [orderId, finalTotalAmount, payment_method]
         );
 
         await connection.commit();
@@ -169,7 +184,8 @@ router.post('/', [
             order: {
                 id: orderId,
                 order_number: orderNumber,
-                total_amount: totalAmount,
+                total_amount: finalTotalAmount,
+                status,
                 payment_method,
                 items: validatedItems
             }
@@ -320,7 +336,12 @@ router.get('/:id', [authenticateToken, requireRole(['owner', 'admin', 'cashier']
 router.patch('/:id/status', [
     authenticateToken,
     requireRole(['owner', 'admin', 'cashier']),
-    body('status').isIn(['pending', 'in_progress', 'ready', 'completed']).withMessage('Invalid status')
+    body('status').isIn(['pending', 'in_progress', 'ready', 'completed']).withMessage('Invalid status'),
+    body('discount_amount').optional().isFloat({ min: 0 }).withMessage('Invalid discount amount'),
+    body('cash_received').optional().isFloat({ min: 0 }).withMessage('Invalid cash received'),
+    body('change_amount').optional().isFloat({ min: 0 }).withMessage('Invalid change amount'),
+    body('payment_method').optional().isIn(['cash', 'gcash']).withMessage('Invalid payment method'),
+    body('total_amount').optional().isFloat({ min: 0 }).withMessage('Invalid total amount')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -329,7 +350,7 @@ router.patch('/:id/status', [
         }
 
         const { id } = req.params;
-        const { status } = req.body;
+        const { status, discount_amount, cash_received, change_amount, payment_method, total_amount } = req.body;
 
         // Get current order
         const [orders] = await pool.execute(
@@ -348,10 +369,60 @@ router.patch('/:id/status', [
             return res.status(400).json({ error: 'Cannot update status of voided order' });
         }
 
+        // Build update query dynamically
+        const updates = ['status = ?', 'updated_at = CURRENT_TIMESTAMP'];
+        const values = [status];
+
+        if (discount_amount !== undefined) {
+            updates.push('discount_amount = ?');
+            values.push(discount_amount);
+        }
+        if (cash_received !== undefined) {
+            updates.push('cash_received = ?');
+            values.push(cash_received);
+        }
+        if (change_amount !== undefined) {
+            updates.push('change_amount = ?');
+            values.push(change_amount);
+        }
+        if (payment_method !== undefined) {
+            updates.push('payment_method = ?');
+            values.push(payment_method);
+        }
+        if (total_amount !== undefined) {
+            updates.push('total_amount = ?');
+            values.push(total_amount);
+        }
+
+        values.push(id);
+
         await pool.execute(
-            'UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [status, id]
+            `UPDATE orders SET ${updates.join(', ')} WHERE id = ?`,
+            values
         );
+
+        // If completing an order, and amount changed, update the transaction record too?
+        // For simplicity, we assume one transaction per order.
+        if (status === 'completed' && (total_amount !== undefined || payment_method !== undefined)) {
+            // Update transaction if exists
+            const finalAmount = total_amount !== undefined ? total_amount : order.total_amount;
+            const finalMethod = payment_method !== undefined ? payment_method : order.payment_method;
+
+            // Check if transaction exists
+            const [transactions] = await pool.execute('SELECT id FROM transactions WHERE order_id = ?', [id]);
+            if (transactions.length > 0) {
+                await pool.execute(
+                    'UPDATE transactions SET amount = ?, payment_method = ? WHERE order_id = ?',
+                    [finalAmount, finalMethod, id]
+                );
+            } else {
+                // Create transaction if missing (shouldn't happen with current create logic, but good for robustness)
+                await pool.execute(
+                    'INSERT INTO transactions (order_id, amount, payment_method) VALUES (?, ?, ?)',
+                    [id, finalAmount, finalMethod]
+                );
+            }
+        }
 
         // Log activity
         await pool.execute(
@@ -361,8 +432,8 @@ router.patch('/:id/status', [
                 'status_update',
                 'orders',
                 id,
-                JSON.stringify({ status: order.status }),
-                JSON.stringify({ status })
+                JSON.stringify({ status: order.status, total: order.total_amount }),
+                JSON.stringify({ status, total: total_amount })
             ]
         );
 

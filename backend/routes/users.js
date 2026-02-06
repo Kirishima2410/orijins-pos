@@ -11,20 +11,20 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
         const { search, role } = req.query;
         const page = Number(req.query.page || 1);
         const limit = Number(req.query.limit || 20);
-        
+
         let query = 'SELECT id, username, email, role, is_active, created_at, updated_at FROM users WHERE 1=1';
         const params = [];
-        
+
         if (search) {
             query += ' AND (username LIKE ? OR email LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
         }
-        
+
         if (role) {
             query += ' AND role = ?';
             params.push(role);
         }
-        
+
         query += ' ORDER BY created_at DESC';
 
         // Add pagination (inline sanitized numbers to avoid binding issues in LIMIT/OFFSET)
@@ -37,12 +37,12 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
         // Get total count
         let countQuery = 'SELECT COUNT(*) as total FROM users WHERE 1=1';
         const countParams = [];
-        
+
         if (search) {
             countQuery += ' AND (username LIKE ? OR email LIKE ?)';
             countParams.push(`%${search}%`, `%${search}%`);
         }
-        
+
         if (role) {
             countQuery += ' AND role = ?';
             countParams.push(role);
@@ -54,8 +54,8 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
         res.json({
             users,
             pagination: {
-            page,
-            limit,
+                page,
+                limit,
                 total,
                 pages: Math.ceil(total / limit)
             }
@@ -94,7 +94,7 @@ router.post('/', [
     body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').isIn(['owner', 'admin', 'cashier']).withMessage('Invalid role')
+    body('role').isIn(['owner', 'admin', 'manager', 'cashier']).withMessage('Invalid role')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -145,7 +145,7 @@ router.put('/:id', [
     requireRole(['owner', 'admin']),
     body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('role').isIn(['owner', 'admin', 'cashier']).withMessage('Invalid role'),
+    body('role').isIn(['owner', 'admin', 'manager', 'cashier']).withMessage('Invalid role'),
     body('is_active').isBoolean().withMessage('Active status must be boolean')
 ], async (req, res) => {
     try {
@@ -270,6 +270,30 @@ router.delete('/:id', [authenticateToken, requireRole(['owner'])], async (req, r
             return res.status(404).json({ error: 'User not found' });
         }
 
+        // Check if user is already inactive
+        if (!users[0].is_active) {
+            // Attempt HARD DELETE
+            try {
+                await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+
+                // Log activity (hard delete)
+                await pool.execute(
+                    'INSERT INTO audit_logs (user_id, action, table_name, record_id, old_values) VALUES (?, ?, ?, ?, ?)',
+                    [req.user.id, 'hard_delete', 'users', id, JSON.stringify(users[0])]
+                );
+
+                return res.json({ message: 'User permanently deleted' });
+            } catch (err) {
+                // Check for foreign key constraint violation (e.g. user has orders)
+                if (err.code === 'ER_ROW_IS_REFERENCED_2') {
+                    return res.status(400).json({
+                        error: 'Cannot permanently delete user because they have associated records (e.g., sales history). The user remains inactive.'
+                    });
+                }
+                throw err;
+            }
+        }
+
         // Soft delete (deactivate)
         await pool.execute(
             'UPDATE users SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
@@ -301,6 +325,7 @@ router.get('/roles/list', [authenticateToken, requireRole(['owner', 'admin'])], 
     try {
         const roles = [
             { value: 'cashier', label: 'Cashier' },
+            { value: 'manager', label: 'Manager' },
             { value: 'admin', label: 'Admin' },
             { value: 'owner', label: 'Owner' }
         ];

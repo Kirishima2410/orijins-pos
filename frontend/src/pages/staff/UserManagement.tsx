@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { usersAPI } from '../../utils/api';
 import { User } from '../../types';
+import toast from 'react-hot-toast';
 
 const emptyForm = { username: '', email: '', password: '', role: 'cashier', is_active: true } as any;
 
@@ -19,17 +20,23 @@ const UserManagement: React.FC = () => {
     } finally { setLoading(false); }
   };
 
-  useEffect(()=>{ load(); // eslint-disable-next-line
+  useEffect(() => {
+    load(); // eslint-disable-next-line
   }, []);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.username || !form.email) return;
+
     if (editingId) {
+      if (!window.confirm('Save changes to this user?')) return;
       await usersAPI.update(editingId, { username: form.username, email: form.email, role: form.role, is_active: !!form.is_active });
+      toast.success('User updated successfully');
     } else {
       if (!form.password || form.password.length < 6) return;
+      if (!window.confirm(`Create new ${form.role} account for ${form.username}?`)) return;
       await usersAPI.create({ username: form.username, email: form.email, password: form.password, role: form.role });
+      toast.success('User created successfully');
     }
     setForm({ ...emptyForm });
     setEditingId(null);
@@ -41,10 +48,22 @@ const UserManagement: React.FC = () => {
     setForm({ username: u.username, email: u.email, role: u.role, is_active: u.is_active, password: '' });
   };
 
-  const remove = async (id: number) => {
-    if (!window.confirm('Deactivate this user?')) return;
-    await usersAPI.delete(id);
-    await load();
+  const remove = async (user: User) => {
+    const isHardDelete = !user.is_active;
+    const message = isHardDelete
+      ? `PERMANENTLY DELETE user "${user.username}"? This cannot be undone.`
+      : `Deactivate user "${user.username}"? They will no longer be able to log in.`;
+
+    if (!window.confirm(message)) return;
+
+    try {
+      await usersAPI.delete(user.id);
+      toast.success(isHardDelete ? 'User permanently deleted' : 'User deactivated');
+      await load();
+    } catch (error) {
+      // Error is handled by api interceptor mostly, but if we need specific handling:
+      console.error(error);
+    }
   };
 
   const resetPwd = async (id: number) => {
@@ -64,10 +83,11 @@ const UserManagement: React.FC = () => {
       <div className="card">
         <div className="card-body">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input className="input" placeholder="Search username/email" value={filters.search} onChange={(e)=>setFilters({ ...filters, search: e.target.value })} />
-            <select className="input" value={filters.role} onChange={(e)=>setFilters({ ...filters, role: e.target.value })}>
+            <input className="input" placeholder="Search username/email" value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} />
+            <select className="input" value={filters.role} onChange={(e) => setFilters({ ...filters, role: e.target.value })}>
               <option value="">All roles</option>
               <option value="cashier">Cashier</option>
+              <option value="manager">Manager</option>
               <option value="admin">Admin</option>
               <option value="owner">Owner</option>
             </select>
@@ -99,9 +119,9 @@ const UserManagement: React.FC = () => {
                     <span className={u.is_active ? 'badge-success' : 'badge-danger'}>{u.is_active ? 'Active' : 'Inactive'}</span>
                   </td>
                   <td className="table-cell text-right space-x-2">
-                    <button className="btn btn-outline btn-sm" onClick={()=>startEdit(u)}>Edit</button>
-                    <button className="btn btn-outline btn-sm" onClick={()=>resetPwd(u.id)}>Reset Password</button>
-                    <button className="btn btn-danger btn-sm" onClick={()=>remove(u.id)}>{u.is_active ? 'Deactivate' : 'Delete'}</button>
+                    <button className="btn btn-outline btn-sm" onClick={() => startEdit(u)}>Edit</button>
+                    <button className="btn btn-outline btn-sm" onClick={() => resetPwd(u.id)}>Reset Password</button>
+                    <button className="btn btn-danger btn-sm" onClick={() => remove(u)}>{u.is_active ? 'Deactivate' : 'Delete'}</button>
                   </td>
                 </tr>
               ))}
@@ -120,36 +140,37 @@ const UserManagement: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="label">Username</label>
-              <input className="input" value={form.username} onChange={(e)=>setForm({ ...form, username: e.target.value })} required />
+              <input className="input" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} required />
             </div>
             <div>
               <label className="label">Email</label>
-              <input type="email" className="input" value={form.email} onChange={(e)=>setForm({ ...form, email: e.target.value })} required />
+              <input type="email" className="input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
             {!editingId && (
               <div>
                 <label className="label">Password</label>
-                <input type="password" className="input" value={form.password} minLength={6} onChange={(e)=>setForm({ ...form, password: e.target.value })} required />
+                <input type="password" className="input" value={form.password} minLength={6} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
               </div>
             )}
             <div>
               <label className="label">Role</label>
-              <select className="input" value={form.role} onChange={(e)=>setForm({ ...form, role: e.target.value })}>
+              <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                 <option value="cashier">Cashier</option>
+                <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
                 <option value="owner">Owner</option>
               </select>
             </div>
             {editingId && (
               <div className="flex items-center gap-2">
-                <input type="checkbox" id="active" checked={!!form.is_active} onChange={(e)=>setForm({ ...form, is_active: e.target.checked })} />
+                <input type="checkbox" id="active" checked={!!form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
                 <label htmlFor="active" className="text-sm">Active</label>
               </div>
             )}
           </div>
           <div className="flex items-center gap-3">
             <button type="submit" className="btn btn-primary">{editingId ? 'Update' : 'Create User'}</button>
-            {editingId && <button type="button" className="btn btn-outline" onClick={()=>{ setEditingId(null); setForm({ ...emptyForm }); }}>Cancel</button>}
+            {editingId && <button type="button" className="btn btn-outline" onClick={() => { setEditingId(null); setForm({ ...emptyForm }); }}>Cancel</button>}
           </div>
         </form>
       </div>

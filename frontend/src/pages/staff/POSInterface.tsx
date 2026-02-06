@@ -9,10 +9,19 @@ import {
   MagnifyingGlassIcon,
   ShoppingCartIcon,
   PrinterIcon,
+  BanknotesIcon,
+  CalculatorIcon,
+  UserGroupIcon,
+  CheckBadgeIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { authAPI } from '../../utils/api';
 
 const POSInterface: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { items, addItem, updateQuantity, removeItem, getTotalAmount, clearCart } = useCart();
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -21,6 +30,17 @@ const POSInterface: React.FC = () => {
   const [customerName, setCustomerName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
   const [loading, setLoading] = useState(false);
+
+  // New state for Order Processing
+  const [currentOrder, setCurrentOrder] = useState<any | null>(null);
+  const [cashReceived, setCashReceived] = useState<number>(0);
+  const [discountApplied, setDiscountApplied] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState(0);
+
+  // Manager Auth for Discount
+  const [showManagerAuth, setShowManagerAuth] = useState(false);
+  const [managerCreds, setManagerCreds] = useState({ username: '', password: '' });
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -35,7 +55,13 @@ const POSInterface: React.FC = () => {
       ]);
 
       setCategories(categoriesResponse.data);
-      setMenuItems(itemsResponse.data);
+      const loadedItems = itemsResponse.data;
+      setMenuItems(loadedItems);
+
+      // Check for redirected order
+      if (location.state?.orderId) {
+        await loadOrderToEdit(location.state.orderId, loadedItems);
+      }
     } catch (error) {
       console.error('Error loading menu data:', error);
       toast.error('Failed to load menu');
@@ -44,17 +70,43 @@ const POSInterface: React.FC = () => {
     }
   };
 
+  const loadOrderToEdit = async (orderId: number, currentMenuItems: MenuItem[]) => {
+    try {
+      const { data: order } = await ordersAPI.getById(orderId);
+      setCurrentOrder(order);
+      setCustomerName(order.customer_name || '');
+      setPaymentMethod(order.payment_method || 'cash');
+
+      // Clear current cart and populate
+      clearCart();
+
+      if (order.items) {
+        order.items.forEach((orderItem: any) => {
+          const menuItem = currentMenuItems.find(i => i.id === orderItem.menu_item_id);
+          if (menuItem) {
+            // Find variant if any
+            const variant = menuItem.variants?.find(v => v.id === orderItem.menu_item_variant_id);
+            addItem(menuItem, orderItem.quantity, variant);
+          }
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load order", err);
+      toast.error("Failed to load order details");
+    }
+  };
+
   const filteredItems = menuItems.filter(item => {
     const matchesCategory = selectedCategory === null || item.category_id === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      item.description?.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCategory && matchesSearch && item.is_available && item.stock_quantity > 0;
   });
 
   const handleAddToCart = (item: MenuItem) => {
     // choose default variant if available: the cheapest available
     const variant: MenuItemVariant | undefined = (item.variants && item.variants.length)
-      ? [...item.variants].sort((a,b) => (a.price - b.price))[0]
+      ? [...item.variants].sort((a, b) => (a.price - b.price))[0]
       : undefined;
     addItem(item, 1, variant);
     const label = variant?.size_label || variant?.variant_name;
@@ -78,30 +130,230 @@ const POSInterface: React.FC = () => {
     toast.success('Item removed from cart');
   };
 
+  const getFinalTotal = () => {
+    const subtotal = getTotalAmount();
+    if (discountApplied) {
+      // PWD Discount: 20% on all items (for MVP simplicity) or specific logic.
+      // Standard: 20% + VAT Exemption usually. 
+      // Let's implement 20% flat for now as requested "PWD discount".
+      const discount = subtotal * 0.20;
+      return subtotal - discount;
+    }
+    return subtotal;
+  };
+
+  const handleApplyDiscount = () => {
+    if (discountApplied) {
+      setDiscountApplied(false);
+      setDiscountAmount(0);
+      return;
+    }
+    setShowManagerAuth(true);
+  };
+
+  const handleManagerVerification = async () => {
+    if (!managerCreds.username || !managerCreds.password) {
+      toast.error("Please enter credentials");
+      return;
+    }
+    setIsVerifying(true);
+    try {
+      await authAPI.verifyRole({
+        username: managerCreds.username,
+        password: managerCreds.password,
+        requiredRole: 'manager' // verify checks for manager/admin/owner
+      });
+
+      setDiscountApplied(true);
+      setShowManagerAuth(false);
+      setManagerCreds({ username: '', password: '' });
+      toast.success("Manager authorized. Discount applied.");
+    } catch (err) {
+      toast.error("Authorization failed");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Shop Info for Receipt
+  const [shopInfo, setShopInfo] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchShopInfo = async () => {
+      try {
+        const { settingsAPI } = await import('../../utils/api');
+        const response = await settingsAPI.getShopInfo();
+        setShopInfo(response.data);
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchShopInfo();
+  }, []);
+
+  const formatMoney = (value: number) => `₱${value.toFixed(2)}`;
+
+  const buildReceiptHTML = (order: any) => {
+    const businessName = shopInfo?.shop_name || 'Orijins Coffee House';
+    const address = shopInfo?.shop_address || '';
+    const phone = shopInfo?.shop_phone || '';
+    const dateObj = order.created_at ? new Date(order.created_at) : new Date();
+    const dateStr = dateObj.toLocaleDateString();
+    const timeStr = dateObj.toLocaleTimeString();
+
+    const itemsList = order.items || items.map(i => ({
+      quantity: i.quantity,
+      menu_item_name: i.menu_item.name,
+      unit_price: i.variant?.price || i.menu_item.price,
+      total_price: (i.variant?.price || i.menu_item.price) * i.quantity
+    }));
+
+    const itemsRows = itemsList.map((it: any) => `
+        <tr>
+          <td style="text-align:left">${Number(it.quantity).toFixed(1)} x</td>
+          <td style="text-align:left">${it.menu_item_name || it.variant_name || 'Item'}</td>
+          <td style="text-align:right">${Number(it.unit_price).toFixed(2)}</td>
+          <td style="text-align:right">${Number(it.total_price).toFixed(2)}</td>
+        </tr>`
+    )
+      .join('');
+
+    const totalAmount = Number(order.total_amount || 0);
+    const subtotal = totalAmount + (order.discount_amount || 0);
+    const showDiscount = (order.discount_amount || 0) > 0;
+
+    return `<!doctype html><html><head><meta charset="utf-8" />
+      <title>Receipt ${order.order_number}</title>
+      <style>
+        body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; margin: 0; }
+        .receipt { width: 260px; padding: 12px; }
+        h1 { font-size: 16px; margin: 0 0 4px 0; text-align:center; }
+        .center { text-align:center; font-size:12px; }
+        .muted { color:#444; }
+        .sep { border-top:1px dashed #000; margin:8px 0; }
+        table { width:100%; font-size:12px; border-collapse:collapse; }
+        td { padding:2px 0; }
+        .totals td { font-weight:bold; }
+        @media print { .no-print { display:none } }
+      </style>
+    </head>
+    <body onload="window.print(); setTimeout(()=>window.close(), 300);">
+      <div class="receipt">
+        <h1>${businessName}</h1>
+        <div class="center muted">${address}</div>
+        <div class="center muted">${phone}</div>
+        <div class="sep"></div>
+        <div style="font-size:12px">
+          <div>INV#: <strong>${order.order_number || 'PENDING'}</strong></div>
+          <div>DATE: ${dateStr} &nbsp;&nbsp; TIME: ${timeStr}</div>
+        </div>
+        <div class="sep"></div>
+        <table>
+          ${itemsRows}
+        </table>
+        <div class="sep"></div>
+        <table class="totals">
+          <tr><td style="text-align:left">SUBTOTAL</td><td style="text-align:right">${formatMoney(showDiscount ? subtotal : totalAmount)}</td></tr>
+          ${showDiscount ? `<tr><td style="text-align:left">DISCOUNT</td><td style="text-align:right">-${formatMoney(order.discount_amount)}</td></tr>` : ''}
+          <tr><td style="text-align:left">TOTAL</td><td style="text-align:right">${formatMoney(totalAmount)}</td></tr>
+        </table>
+        <div class="sep"></div>
+        <div style="font-size:12px">
+          <div>PAYMENT RECEIVED: <strong>${formatMoney(order.cash_received || totalAmount)}</strong></div>
+          <div class="muted">${(order.payment_method || 'cash').toUpperCase()}</div>
+          <div>CHANGE AMOUNT: ${formatMoney(order.change_amount || 0)}</div>
+        </div>
+        <div class="sep"></div>
+        <div class="center">Acknowledgement Receipt<br/>Thank you!</div>
+      </div>
+    </body></html>`;
+  };
+
+  const handlePrintReceipt = (order: any) => {
+    try {
+      const html = buildReceiptHTML(order);
+      const win = window.open('', 'printwindow', 'width=320,height=600');
+      if (!win) return;
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+    } catch (_) {
+      toast.error('Unable to print');
+    }
+  };
+
   const handleSubmitOrder = async () => {
     if (items.length === 0) {
       toast.error('Cart is empty');
       return;
     }
 
+    const finalTotal = getFinalTotal();
+    const subtotal = getTotalAmount();
+    const discount = subtotal - finalTotal;
+
+    if (paymentMethod === 'cash' && cashReceived < finalTotal) {
+      toast.error(`Insufficient cash. Needed: ₱${finalTotal.toFixed(2)}`);
+      return;
+    }
+
     setLoading(true);
     try {
-      const orderData = {
-        items: items.map(item => ({
-          menu_item_id: item.menu_item.id,
-          menu_item_variant_id: item.variant?.id,
-          quantity: item.quantity,
-        })),
+      // Common payload data
+      const commonData = {
+        discount_amount: discountApplied ? discount : 0,
+        cash_received: paymentMethod === 'cash' ? cashReceived : 0,
+        change_amount: paymentMethod === 'cash' ? (cashReceived - finalTotal) : 0,
         payment_method: paymentMethod,
-        customer_name: customerName.trim() || null,
+        total_amount: finalTotal,
+        status: 'in_progress' // As requested: POS orders start as processing
       };
 
-      const response = await ordersAPI.create(orderData);
-      
-      if (response.data.order) {
-        clearCart();
-        setCustomerName('');
-        toast.success('Order placed successfully!');
+      if (currentOrder) {
+        // FOR EXISTING ORDERS (e.g. redirected from Order Mgmt)
+        // Flow: Update Status/Payment -> Print Receipt -> Navigate
+
+        // 1. Update Order
+        const { default: api } = await import('../../utils/api');
+        await api.patch(`/orders/${currentOrder.id}/status`, commonData);
+
+        // 2. Print Receipt
+        // Create updated order object for printing
+        const updatedOrder = {
+          ...currentOrder,
+          ...commonData
+        };
+        handlePrintReceipt(updatedOrder);
+
+        toast.success('Order processed successfully!');
+        navigate('/staff/orders');
+      } else {
+        // FOR NEW ORDERS
+        // Flow: Create (Processing) -> Print Receipt -> Navigate
+
+        const orderData = {
+          items: items.map(item => ({
+            menu_item_id: item.menu_item.id,
+            menu_item_variant_id: item.variant?.id,
+            quantity: item.quantity,
+          })),
+          customer_name: customerName.trim() || null,
+          ...commonData
+        };
+
+        const response = await ordersAPI.create(orderData);
+
+        if (response.data.order) {
+          // Print Receipt
+          handlePrintReceipt(response.data.order);
+
+          clearCart();
+          setCustomerName('');
+          setCashReceived(0);
+          setDiscountApplied(false);
+          toast.success('Order placed successfully!');
+          navigate('/staff/orders'); // Navigate away after placing
+        }
       }
     } catch (error: any) {
       console.error('Error placing order:', error);
@@ -113,11 +365,6 @@ const POSInterface: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handlePrintReceipt = () => {
-    // This would integrate with a receipt printer
-    toast.success('Receipt sent to printer');
   };
 
   if (loading && items.length === 0) {
@@ -161,11 +408,10 @@ const POSInterface: React.FC = () => {
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setSelectedCategory(null)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                      selectedCategory === null
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${selectedCategory === null
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
                   >
                     All Items
                   </button>
@@ -173,11 +419,10 @@ const POSInterface: React.FC = () => {
                     <button
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                        selectedCategory === category.id
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                      }`}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${selectedCategory === category.id
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
                     >
                       {category.name}
                     </button>
@@ -207,15 +452,15 @@ const POSInterface: React.FC = () => {
                       <span className="text-3xl text-gray-400">☕</span>
                     )}
                   </div>
-                  
+
                   <h3 className="font-medium text-gray-900 text-sm mb-1 line-clamp-1">
                     {item.name}
                   </h3>
-                  
+
                   <p className="text-lg font-bold text-primary-600">
                     ₱{item.price.toFixed(2)}
                   </p>
-                  
+
                   {item.stock_quantity <= item.low_stock_threshold && (
                     <p className="text-xs text-warning-600 mt-1">
                       Only {item.stock_quantity} left
@@ -249,7 +494,7 @@ const POSInterface: React.FC = () => {
                 Current Order
               </h2>
             </div>
-            
+
             <div className="card-body">
               {items.length > 0 ? (
                 <div className="space-y-4">
@@ -261,7 +506,7 @@ const POSInterface: React.FC = () => {
                           <h4 className="font-medium text-gray-900 text-sm">{item.menu_item.name} {item.variant?.size_label ? `(${item.variant.size_label})` : ''}</h4>
                           <p className="text-xs text-gray-600">₱{(item.variant?.price ?? item.menu_item.price).toFixed(2)} each</p>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleQuantityChange(item.menu_item.id, -1, item.variant?.id)}
@@ -300,7 +545,7 @@ const POSInterface: React.FC = () => {
                           className="input"
                         />
                       </div>
-                      
+
                       <div>
                         <label className="label">Payment Method</label>
                         <div className="space-y-2">
@@ -329,20 +574,77 @@ const POSInterface: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Order Total */}
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="flex justify-between items-center text-lg font-semibold text-gray-900">
-                      <span>Total</span>
-                      <span>₱{getTotalAmount().toFixed(2)}</span>
+                  {/* Payment Details */}
+                  <div className="border-t border-gray-200 pt-4 space-y-3">
+                    <h3 className="font-semibold text-gray-900 flex items-center">
+                      <BanknotesIcon className="w-5 h-5 mr-2" />
+                      Payment Details
+                    </h3>
+
+                    {/* Discount Toggle */}
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-700">PWD/Senior Discount (20%)</span>
+                      <button
+                        onClick={handleApplyDiscount}
+                        className={`btn btn-sm ${discountApplied ? 'btn-danger' : 'btn-outline'}`}
+                      >
+                        {discountApplied ? 'Remove' : 'Apply'}
+                      </button>
                     </div>
+
+                    {/* Total Calculation */}
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between text-gray-600">
+                        <span>Subtotal</span>
+                        <span>₱{getTotalAmount().toFixed(2)}</span>
+                      </div>
+                      {discountApplied && (
+                        <div className="flex justify-between text-success-600 font-medium">
+                          <span>Discount</span>
+                          <span>-₱{(getTotalAmount() - getFinalTotal()).toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center text-xl font-bold text-gray-900 pt-2 border-t">
+                        <span>Total Due</span>
+                        <span>₱{getFinalTotal().toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    {/* Payment Inputs */}
+                    {paymentMethod === 'cash' && (
+                      <div className="space-y-2 pt-2">
+                        <label className="label text-xs">Cash Received</label>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            value={cashReceived || ''}
+                            onChange={(e) => setCashReceived(parseFloat(e.target.value))}
+                            className="input w-full pr-16"
+                            placeholder="0.00"
+                            min="0"
+                          />
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-500">
+                            PHP
+                          </div>
+                        </div>
+
+                        {/* Change Display */}
+                        <div className="flex justify-between items-center bg-gray-50 p-3 rounded-md">
+                          <span className="text-gray-600 font-medium">Change</span>
+                          <span className={`font-bold text-lg ${cashReceived >= getFinalTotal() ? 'text-success-600' : 'text-gray-400'}`}>
+                            ₱{Math.max(0, cashReceived - getFinalTotal()).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="space-y-3">
+                  <div className="space-y-3 pt-2">
                     <button
                       onClick={handleSubmitOrder}
-                      disabled={loading}
-                      className="btn btn-primary w-full"
+                      disabled={loading || (paymentMethod === 'cash' && cashReceived < getFinalTotal())}
+                      className={`btn w-full ${currentOrder ? 'btn-success' : 'btn-primary'}`}
                     >
                       {loading ? (
                         <div className="flex items-center justify-center">
@@ -354,10 +656,10 @@ const POSInterface: React.FC = () => {
                           <span className="ml-2">Processing...</span>
                         </div>
                       ) : (
-                        'Place Order'
+                        currentOrder ? 'Complete Order' : 'Place Order'
                       )}
                     </button>
-                    
+
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={handlePrintReceipt}
@@ -367,19 +669,75 @@ const POSInterface: React.FC = () => {
                         <PrinterIcon className="w-4 h-4 mr-1" />
                         Print
                       </button>
-                      
+
                       <button
                         onClick={() => {
                           clearCart();
                           setCustomerName('');
+                          setCurrentOrder(null);
+                          setCashReceived(0);
+                          setDiscountApplied(false);
+                          // If current order was loaded, maybe navigate back?
+                          if (currentOrder) navigate('/staff/orders');
                         }}
-                        disabled={items.length === 0}
                         className="btn btn-outline btn-sm"
                       >
-                        Clear
+                        {currentOrder ? 'Cancel Edit' : 'Clear'}
                       </button>
                     </div>
                   </div>
+
+                  {/* Manager Auth Modal */}
+                  {showManagerAuth && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                          <UserGroupIcon className="w-5 h-5 mr-2 text-primary-600" />
+                          Manager Authorization
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Please enter manager credentials to approve PWD discount.
+                        </p>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="label text-xs">Username</label>
+                            <input
+                              type="text"
+                              className="input w-full"
+                              value={managerCreds.username}
+                              onChange={(e) => setManagerCreds({ ...managerCreds, username: e.target.value })}
+                            />
+                          </div>
+                          <div>
+                            <label className="label text-xs">Password</label>
+                            <input
+                              type="password"
+                              className="input w-full"
+                              value={managerCreds.password}
+                              onChange={(e) => setManagerCreds({ ...managerCreds, password: e.target.value })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 mt-6">
+                          <button
+                            onClick={() => setShowManagerAuth(false)}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleManagerVerification}
+                            disabled={isVerifying}
+                            className="btn btn-primary btn-sm"
+                          >
+                            {isVerifying ? 'Verifying...' : 'Authorize'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">

@@ -40,6 +40,60 @@ async function updateSchema() {
             console.log('ℹ️ table_number column already exists in orders');
         }
 
+        // Check for discount and payment amount columns
+        const [discountCol] = await pool.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'orders' 
+            AND COLUMN_NAME = 'discount_amount'
+        `);
+
+        if (discountCol.length === 0) {
+            console.log('📝 Adding discount and payment columns to orders table...');
+            await pool.execute(`
+                ALTER TABLE orders 
+                ADD COLUMN discount_amount DECIMAL(10,2) DEFAULT 0.00 AFTER total_amount,
+                ADD COLUMN cash_received DECIMAL(10,2) DEFAULT 0.00 AFTER payment_method,
+                ADD COLUMN change_amount DECIMAL(10,2) DEFAULT 0.00 AFTER cash_received
+            `);
+            console.log('✅ Discount and payment columns added to orders');
+        } else {
+            console.log('ℹ️ Discount and payment columns already exist in orders');
+        }
+
+        // Update users role enum
+        console.log('📝 Updating users role enum...');
+        try {
+            await pool.execute(`
+                ALTER TABLE users 
+                MODIFY COLUMN role ENUM('owner', 'admin', 'manager', 'cashier') NOT NULL DEFAULT 'cashier'
+            `);
+            console.log('✅ Users role enum updated');
+        } catch (error) {
+            console.log('ℹ️ Users role enum update skipped (might already be up to date)');
+        }
+
+        // Check for details column in audit_logs
+        const [auditDetailsCol] = await pool.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'audit_logs' 
+            AND COLUMN_NAME = 'details'
+        `);
+
+        if (auditDetailsCol.length === 0) {
+            console.log('📝 Adding details column to audit_logs table...');
+            await pool.execute(`
+                ALTER TABLE audit_logs 
+                ADD COLUMN details TEXT NULL AFTER user_agent
+            `);
+            console.log('✅ details column added to audit_logs');
+        } else {
+            console.log('ℹ️ details column already exists in audit_logs');
+        }
+
         console.log('✨ Schema update completed successfully');
         process.exit(0);
     } catch (error) {

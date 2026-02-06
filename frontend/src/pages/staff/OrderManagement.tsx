@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ordersAPI, settingsAPI } from '../../utils/api';
 import { Order, ShopInfo } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +17,7 @@ import toast from 'react-hot-toast';
 
 const OrderManagement: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -69,16 +71,11 @@ const OrderManagement: React.FC = () => {
     try {
       await ordersAPI.updateStatus(orderId, newStatus);
       toast.success('Order status updated successfully');
+      /*
       if (newStatus === 'completed') {
-        try {
-          const { data } = await ordersAPI.getById(orderId);
-          if (data) {
-            printReceipt(data as Order);
-          }
-        } catch (e) {
-          // printing is best-effort
-        }
+        // Printing removed as per user request
       }
+      */
       loadOrders();
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -427,7 +424,10 @@ const OrderManagement: React.FC = () => {
                         {/* Status Update Buttons */}
                         {order.status === 'pending' && (
                           <button
-                            onClick={() => handleStatusUpdate(order.id, 'in_progress')}
+                            onClick={async () => {
+                              await handleStatusUpdate(order.id, 'in_progress');
+                              navigate('/staff/pos', { state: { orderId: order.id } });
+                            }}
                             className="btn btn-sm btn-primary"
                           >
                             Start
