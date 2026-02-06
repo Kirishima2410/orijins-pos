@@ -9,6 +9,7 @@ import {
   ExclamationTriangleIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
+  ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
@@ -162,10 +163,10 @@ const StaffDashboard: React.FC = () => {
                       <p className="font-medium text-gray-900">₱{order.total_amount.toFixed(2)}</p>
                       <span
                         className={`badge ${order.status === 'completed'
-                            ? 'badge-success'
-                            : order.status === 'pending'
-                              ? 'badge-warning'
-                              : 'badge-info'
+                          ? 'badge-success'
+                          : order.status === 'pending'
+                            ? 'badge-warning'
+                            : 'badge-info'
                           }`}
                       >
                         {order.status}
@@ -278,6 +279,15 @@ const StaffDashboard: React.FC = () => {
               <div className="text-center">
                 <ExclamationTriangleIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                 <p className="text-sm font-medium text-gray-700">Update Menu</p>
+              </div>
+            </Link>
+            <Link
+              to="/staff/inventory"
+              className="flex items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors duration-200"
+            >
+              <div className="text-center">
+                <ArchiveBoxIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-medium text-gray-700">Manage Inventory</p>
               </div>
             </Link>
           </div>

@@ -29,11 +29,11 @@ router.get('/overview', [authenticateToken, requireRole(['owner', 'admin', 'cash
              WHERE status IN ('pending', 'in_progress', 'ready') AND is_voided = FALSE`
         );
 
-        // Low stock alerts
+        // Low stock alerts (Inventory)
         const [lowStock] = await pool.execute(
             `SELECT COUNT(*) as count 
-             FROM menu_items 
-             WHERE stock_quantity <= low_stock_threshold AND is_available = TRUE`
+             FROM inventory_items 
+             WHERE stock_quantity <= low_stock_threshold`
         );
 
         // Recent orders (last 10) - avoid ONLY_FULL_GROUP_BY by using scalar subquery
@@ -149,20 +149,18 @@ router.get('/inventory', [authenticateToken, requireRole(['owner', 'admin', 'cas
     try {
         // Low stock items
         const [lowStockItems] = await pool.execute(
-            `SELECT mi.id, mi.name, mi.stock_quantity, mi.low_stock_threshold, c.name as category_name
-             FROM menu_items mi
-             LEFT JOIN categories c ON mi.category_id = c.id
-             WHERE mi.stock_quantity <= mi.low_stock_threshold AND mi.is_available = TRUE
-             ORDER BY (mi.stock_quantity / mi.low_stock_threshold) ASC`
+            `SELECT id, name, stock_quantity, low_stock_threshold, unit, category as category_name
+             FROM inventory_items 
+             WHERE stock_quantity <= low_stock_threshold
+             ORDER BY (stock_quantity / low_stock_threshold) ASC`
         );
 
         // Out of stock items
         const [outOfStockItems] = await pool.execute(
-            `SELECT mi.id, mi.name, c.name as category_name
-             FROM menu_items mi
-             LEFT JOIN categories c ON mi.category_id = c.id
-             WHERE mi.stock_quantity = 0 AND mi.is_available = TRUE
-             ORDER BY mi.name`
+            `SELECT id, name, unit, category as category_name
+             FROM inventory_items 
+             WHERE stock_quantity = 0
+             ORDER BY name`
         );
 
         // Inventory summary
@@ -172,8 +170,7 @@ router.get('/inventory', [authenticateToken, requireRole(['owner', 'admin', 'cas
                 COUNT(CASE WHEN stock_quantity = 0 THEN 1 END) as out_of_stock,
                 COUNT(CASE WHEN stock_quantity <= low_stock_threshold AND stock_quantity > 0 THEN 1 END) as low_stock,
                 COUNT(CASE WHEN stock_quantity > low_stock_threshold THEN 1 END) as in_stock
-             FROM menu_items 
-             WHERE is_available = TRUE`
+             FROM inventory_items`
         );
 
         res.json({
@@ -216,11 +213,11 @@ router.get('/activity', [authenticateToken, requireRole(['owner', 'admin', 'cash
         const [notifications] = await pool.execute(
             `SELECT 
                 'low_stock' as type,
-                CONCAT('Low stock alert: ', mi.name, ' (', mi.stock_quantity, ' remaining)') as message,
-                mi.updated_at as created_at
-             FROM menu_items mi
-             WHERE mi.stock_quantity <= mi.low_stock_threshold AND mi.is_available = TRUE
-             ORDER BY mi.updated_at DESC
+                CONCAT('Low stock alert: ', name, ' (', stock_quantity, ' ', unit, ' remaining)') as message,
+                updated_at as created_at
+             FROM inventory_items
+             WHERE stock_quantity <= low_stock_threshold
+             ORDER BY updated_at DESC
              LIMIT 10`
         );
 

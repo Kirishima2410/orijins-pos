@@ -39,7 +39,7 @@ router.get('/items', async (req, res) => {
 
         let query = `
             SELECT mi.id, mi.name, mi.description, mi.category_id, mi.price, 
-                   mi.image_url, mi.is_available, mi.stock_quantity, mi.low_stock_threshold, 
+                   mi.image_url, mi.is_available, 
                    c.name as category_name
             FROM menu_items mi
             LEFT JOIN categories c ON mi.category_id = c.id
@@ -83,8 +83,6 @@ router.get('/items', async (req, res) => {
         const normalized = items.map((item) => ({
             ...item,
             price: Number(item.price),
-            stock_quantity: item.stock_quantity !== undefined ? Number(item.stock_quantity) : item.stock_quantity,
-            low_stock_threshold: item.low_stock_threshold !== undefined ? Number(item.low_stock_threshold) : item.low_stock_threshold,
             variants: variantsByItem[item.id] || []
         }));
 
@@ -102,7 +100,7 @@ router.get('/items/:id', async (req, res) => {
 
         const [items] = await pool.execute(
             `SELECT mi.id, mi.name, mi.description, mi.category_id, mi.price, 
-                    mi.image_url, mi.is_available, mi.stock_quantity, 
+                    mi.image_url, mi.is_available, 
                     c.name as category_name
              FROM menu_items mi
              LEFT JOIN categories c ON mi.category_id = c.id
@@ -116,8 +114,7 @@ router.get('/items/:id', async (req, res) => {
 
         const item = items[0];
         item.price = Number(item.price);
-        if (item.stock_quantity !== undefined) item.stock_quantity = Number(item.stock_quantity);
-        if (item.low_stock_threshold !== undefined) item.low_stock_threshold = Number(item.low_stock_threshold);
+
 
         res.json(item);
     } catch (error) {

@@ -20,6 +20,7 @@ import Reports from './pages/staff/Reports';
 import Settings from './pages/staff/Settings';
 import Expenses from './pages/staff/Expenses';
 import TableManagement from './pages/staff/TableManagement';
+import Inventory from './pages/staff/Inventory';
 
 // Layout components
 import CustomerLayout from './components/layout/CustomerLayout';
@@ -120,6 +121,14 @@ function App() {
                 <ProtectedRoute requiredRoles={['owner', 'admin']}>
                   <StaffLayout>
                     <TableManagement />
+                  </StaffLayout>
+                </ProtectedRoute>
+              } />
+
+              <Route path="/staff/inventory" element={
+                <ProtectedRoute requiredRoles={['owner', 'admin', 'manager', 'cashier']}>
+                  <StaffLayout>
+                    <Inventory />
                   </StaffLayout>
                 </ProtectedRoute>
               } />

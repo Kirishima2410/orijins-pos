@@ -261,4 +261,27 @@ export const tablesAPI = {
     api.delete(`/tables/${id}`),
 };
 
+export const inventoryAPI = {
+  getAll: () =>
+    api.get('/inventory'),
+
+  create: (data: { name: string; sku?: string; category?: string; stock_quantity?: number; unit?: string; low_stock_threshold?: number; cost_per_unit?: number }) =>
+    api.post('/inventory', data),
+
+  update: (id: number, data: any) =>
+    api.put(`/inventory/${id}`, data),
+
+  updateStock: (id: number, data: { quantity: number; action: string; notes?: string }) =>
+    api.patch(`/inventory/${id}/stock`, data),
+
+  delete: (id: number) =>
+    api.delete(`/inventory/${id}`),
+
+  getRecipe: (menuItemId: number) =>
+    api.get(`/inventory/recipes/${menuItemId}`),
+
+  updateRecipe: (menuItemId: number, data: { ingredients: { inventory_item_id: number; quantity_required: number }[] }) =>
+    api.post(`/inventory/recipes/${menuItemId}`, data),
+};
+
 export default api;

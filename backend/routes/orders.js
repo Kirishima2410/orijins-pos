@@ -63,7 +63,7 @@ router.post('/', [
 
         for (const item of normalizedItems) {
             const [menuItems] = await connection.execute(
-                'SELECT id, name, price, is_available, stock_quantity FROM menu_items WHERE id = ?',
+                'SELECT id, name, price, is_available FROM menu_items WHERE id = ?',
                 [item.menu_item_id]
             );
 
@@ -77,15 +77,12 @@ router.post('/', [
                 throw new Error(`Menu item "${menuItem.name}" is not available`);
             }
 
-            if (menuItem.stock_quantity < item.quantity) {
-                throw new Error(`Insufficient stock for "${menuItem.name}". Available: ${menuItem.stock_quantity}`);
-            }
-
-            // Determine price from variant if provided
+            // Determine price, variant info
             let unitPrice = menuItem.price;
             let variantName = null;
             let sizeLabel = null;
             let variantId = item.menu_item_variant_id;
+
             if (item.menu_item_variant_id) {
                 const [variants] = await connection.execute(
                     'SELECT id, variant_name, size_label, price, is_available FROM menu_item_variants WHERE id = ? AND menu_item_id = ?',
@@ -104,6 +101,40 @@ router.post('/', [
                 variantId = v.id;
             }
 
+            // Check Inventory Stock via Recipes
+            const [recipes] = await connection.execute(
+                'SELECT inventory_item_id, quantity_required FROM recipes WHERE menu_item_id = ?',
+                [item.menu_item_id]
+            );
+
+            const inventoryDeductions = [];
+
+            if (recipes.length > 0) {
+                for (const recipe of recipes) {
+                    const requiredQty = recipe.quantity_required * item.quantity;
+                    const [invItems] = await connection.execute(
+                        'SELECT name, stock_quantity, id FROM inventory_items WHERE id = ?',
+                        [recipe.inventory_item_id]
+                    );
+
+                    if (invItems.length === 0) {
+                        // Inventory item missing, skip or error? Error safest.
+                        throw new Error(`Inventory item ID ${recipe.inventory_item_id} missing (for ${menuItem.name})`);
+                    }
+
+                    const invItem = invItems[0];
+                    if (invItem.stock_quantity < requiredQty) {
+                        throw new Error(`Insufficient stock for "${menuItem.name}" (Ingredient: ${invItem.name}). Available: ${invItem.stock_quantity}`);
+                    }
+
+                    inventoryDeductions.push({
+                        inventory_item_id: invItem.id,
+                        quantity: requiredQty,
+                        name: invItem.name
+                    });
+                }
+            }
+
             const itemTotal = unitPrice * item.quantity;
             totalAmount += itemTotal;
 
@@ -114,7 +145,8 @@ router.post('/', [
                 size_label: sizeLabel,
                 unit_price: unitPrice,
                 total_price: itemTotal,
-                menu_item_name: menuItem.name
+                menu_item_name: menuItem.name,
+                inventory_deductions: inventoryDeductions // Pass this to the next step
             });
         }
 
@@ -138,6 +170,7 @@ router.post('/', [
         const orderId = orderResult.insertId;
 
         // Create order items and update stock
+        // Create order items and update stock
         for (const item of validatedItems) {
             // Insert order item
             await connection.execute(
@@ -145,30 +178,35 @@ router.post('/', [
                 [orderId, item.menu_item_id, item.menu_item_variant_id, item.variant_name, item.size_label, item.quantity, item.unit_price, item.total_price]
             );
 
-            // Update stock quantity
-            await connection.execute(
-                'UPDATE menu_items SET stock_quantity = stock_quantity - ? WHERE id = ?',
-                [item.quantity, item.menu_item_id]
-            );
+            // Update inventory based on deductions
+            if (item.inventory_deductions && item.inventory_deductions.length > 0) {
+                for (const deduction of item.inventory_deductions) {
+                    // Update stock
+                    await connection.execute(
+                        'UPDATE inventory_items SET stock_quantity = stock_quantity - ? WHERE id = ?',
+                        [deduction.quantity, deduction.inventory_item_id]
+                    );
 
-            // Log inventory change
-            const [currentStock] = await connection.execute(
-                'SELECT stock_quantity FROM menu_items WHERE id = ?',
-                [item.menu_item_id]
-            );
+                    // Log inventory change
+                    const [currentStock] = await connection.execute(
+                        'SELECT stock_quantity FROM inventory_items WHERE id = ?',
+                        [deduction.inventory_item_id]
+                    );
 
-            await connection.execute(
-                'INSERT INTO inventory_logs (menu_item_id, action_type, quantity_change, previous_stock, new_stock, reference_order_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [
-                    item.menu_item_id,
-                    'sale',
-                    -item.quantity,
-                    currentStock[0].stock_quantity + item.quantity,
-                    currentStock[0].stock_quantity,
-                    orderId,
-                    `Sold in order ${orderNumber}`
-                ]
-            );
+                    await connection.execute(
+                        'INSERT INTO inventory_logs (inventory_item_id, action_type, quantity_change, previous_stock, new_stock, reference_order_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [
+                            deduction.inventory_item_id,
+                            'sale',
+                            -deduction.quantity,
+                            currentStock[0].stock_quantity + deduction.quantity,
+                            currentStock[0].stock_quantity,
+                            orderId,
+                            `Sold in order ${orderNumber} (Item: ${item.menu_item_name})`
+                        ]
+                    );
+                }
+            }
         }
 
         // Create transaction record
@@ -506,30 +544,43 @@ router.post('/:id/void', [
         );
 
         // Restore stock quantities
+        // Restore stock quantities
         for (const item of orderItems) {
-            await connection.execute(
-                'UPDATE menu_items SET stock_quantity = stock_quantity + ? WHERE id = ?',
-                [item.quantity, item.menu_item_id]
-            );
-
-            // Log inventory restoration
-            const [currentStock] = await connection.execute(
-                'SELECT stock_quantity FROM menu_items WHERE id = ?',
+            // Get recipes for this item
+            const [recipes] = await connection.execute(
+                'SELECT inventory_item_id, quantity_required FROM recipes WHERE menu_item_id = ?',
                 [item.menu_item_id]
             );
 
-            await connection.execute(
-                'INSERT INTO inventory_logs (menu_item_id, action_type, quantity_change, previous_stock, new_stock, reference_order_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [
-                    item.menu_item_id,
-                    'adjustment',
-                    item.quantity,
-                    currentStock[0].stock_quantity - item.quantity,
-                    currentStock[0].stock_quantity,
-                    id,
-                    `Stock restored from voided order ${order.order_number}`
-                ]
-            );
+            if (recipes.length > 0) {
+                for (const recipe of recipes) {
+                    const restoreQty = recipe.quantity_required * item.quantity;
+
+                    await connection.execute(
+                        'UPDATE inventory_items SET stock_quantity = stock_quantity + ? WHERE id = ?',
+                        [restoreQty, recipe.inventory_item_id]
+                    );
+
+                    // Log inventory restoration
+                    const [currentStock] = await connection.execute(
+                        'SELECT stock_quantity FROM inventory_items WHERE id = ?',
+                        [recipe.inventory_item_id]
+                    );
+
+                    await connection.execute(
+                        'INSERT INTO inventory_logs (inventory_item_id, action_type, quantity_change, previous_stock, new_stock, reference_order_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [
+                            recipe.inventory_item_id,
+                            'adjustment',
+                            restoreQty,
+                            currentStock[0].stock_quantity - restoreQty,
+                            currentStock[0].stock_quantity,
+                            id,
+                            `Stock restored from voided order ${order.order_number}`
+                        ]
+                    );
+                }
+            }
         }
 
         // Void the order

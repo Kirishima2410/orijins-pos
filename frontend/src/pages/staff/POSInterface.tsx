@@ -42,6 +42,9 @@ const POSInterface: React.FC = () => {
   const [managerCreds, setManagerCreds] = useState({ username: '', password: '' });
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Size Selection Modal
+  const [itemToSelectSize, setItemToSelectSize] = useState<MenuItem | null>(null);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -100,17 +103,36 @@ const POSInterface: React.FC = () => {
     const matchesCategory = selectedCategory === null || item.category_id === selectedCategory;
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch && item.is_available && item.stock_quantity > 0;
+    return matchesCategory && matchesSearch && item.is_available;
   });
 
   const handleAddToCart = (item: MenuItem) => {
-    // choose default variant if available: the cheapest available
-    const variant: MenuItemVariant | undefined = (item.variants && item.variants.length)
-      ? [...item.variants].sort((a, b) => (a.price - b.price))[0]
-      : undefined;
-    addItem(item, 1, variant);
-    const label = variant?.size_label || variant?.variant_name;
-    toast.success(`${item.name}${label ? ` (${label})` : ''} added to cart`);
+    // If item has variants
+    if (item.variants && item.variants.length > 0) {
+      // If ONLY one variant (e.g. 8oz only), select it automatically
+      if (item.variants.length === 1) {
+        const variant = item.variants[0];
+        addItem(item, 1, variant);
+        toast.success(`${item.name} (${variant.size_label || variant.variant_name}) added to cart`);
+        return;
+      }
+
+      // Otherwise open selection modal
+      setItemToSelectSize(item);
+      return;
+    }
+
+    // Otherwise add normally
+    addItem(item, 1);
+    toast.success(`${item.name} added to cart`);
+  };
+
+  const handleVariantSelection = (variant: MenuItemVariant) => {
+    if (!itemToSelectSize) return;
+
+    addItem(itemToSelectSize, 1, variant);
+    toast.success(`${itemToSelectSize.name} (${variant.size_label || variant.variant_name}) added to cart`);
+    setItemToSelectSize(null);
   };
 
   const handleQuantityChange = (itemId: number, change: number, variantId?: number) => {
@@ -461,11 +483,7 @@ const POSInterface: React.FC = () => {
                     ₱{item.price.toFixed(2)}
                   </p>
 
-                  {item.stock_quantity <= item.low_stock_threshold && (
-                    <p className="text-xs text-warning-600 mt-1">
-                      Only {item.stock_quantity} left
-                    </p>
-                  )}
+
                 </div>
               </div>
             ))}
@@ -688,56 +706,6 @@ const POSInterface: React.FC = () => {
                   </div>
 
                   {/* Manager Auth Modal */}
-                  {showManagerAuth && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
-                          <UserGroupIcon className="w-5 h-5 mr-2 text-primary-600" />
-                          Manager Authorization
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Please enter manager credentials to approve PWD discount.
-                        </p>
-
-                        <div className="space-y-3">
-                          <div>
-                            <label className="label text-xs">Username</label>
-                            <input
-                              type="text"
-                              className="input w-full"
-                              value={managerCreds.username}
-                              onChange={(e) => setManagerCreds({ ...managerCreds, username: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <label className="label text-xs">Password</label>
-                            <input
-                              type="password"
-                              className="input w-full"
-                              value={managerCreds.password}
-                              onChange={(e) => setManagerCreds({ ...managerCreds, password: e.target.value })}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 mt-6">
-                          <button
-                            onClick={() => setShowManagerAuth(false)}
-                            className="btn btn-ghost btn-sm"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleManagerVerification}
-                            disabled={isVerifying}
-                            className="btn btn-primary btn-sm"
-                          >
-                            {isVerifying ? 'Verifying...' : 'Authorize'}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -750,6 +718,92 @@ const POSInterface: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Manager Auth Modal */}
+      {showManagerAuth && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <UserGroupIcon className="w-5 h-5 mr-2 text-primary-600" />
+              Manager Authorization
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Please enter manager credentials to approve PWD discount.
+            </p>
+
+            <div className="space-y-3">
+              <div>
+                <label className="label text-xs">Username</label>
+                <input
+                  type="text"
+                  className="input w-full"
+                  value={managerCreds.username}
+                  onChange={(e) => setManagerCreds({ ...managerCreds, username: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="label text-xs">Password</label>
+                <input
+                  type="password"
+                  className="input w-full"
+                  value={managerCreds.password}
+                  onChange={(e) => setManagerCreds({ ...managerCreds, password: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                onClick={() => setShowManagerAuth(false)}
+                className="btn btn-ghost btn-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleManagerVerification}
+                disabled={isVerifying}
+                className="btn btn-primary btn-sm"
+              >
+                {isVerifying ? 'Verifying...' : 'Authorize'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Size Selection Modal */}
+      {itemToSelectSize && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Select Size</h3>
+            <p className="text-gray-600 mb-4">
+              Choose a size for <span className="font-semibold">{itemToSelectSize.name}</span>
+            </p>
+
+            <div className="grid grid-cols-1 gap-3">
+              {itemToSelectSize.variants?.sort((a, b) => a.price - b.price).map((variant) => (
+                <button
+                  key={variant.id}
+                  onClick={() => handleVariantSelection(variant)}
+                  className="btn btn-outline py-3 flex justify-between items-center hover:bg-primary-50 hover:border-primary-500 hover:text-primary-700"
+                >
+                  <span className="font-semibold text-lg">{variant.size_label || variant.variant_name}</span>
+                  <span className="font-bold">₱{variant.price.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setItemToSelectSize(null)}
+                className="btn btn-ghost"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

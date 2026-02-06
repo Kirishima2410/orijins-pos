@@ -11,6 +11,7 @@ import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
+  ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 
 interface StaffLayoutProps {
@@ -52,6 +53,12 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
       href: '/staff/menu',
       icon: Cog6ToothIcon,
       roles: ['owner', 'admin', 'cashier'],
+    },
+    {
+      name: 'Inventory',
+      href: '/staff/inventory',
+      icon: ArchiveBoxIcon,
+      roles: ['owner', 'admin', 'cashier', 'manager'],
     },
     {
       name: 'Users',

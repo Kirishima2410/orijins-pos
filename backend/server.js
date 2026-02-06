@@ -18,6 +18,7 @@ const reportsRoutes = require('./routes/reports');
 const settingsRoutes = require('./routes/settings');
 const expensesRoutes = require('./routes/expenses');
 const tablesRoutes = require('./routes/tables');
+const inventoryRoutes = require('./routes/inventory');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -65,6 +66,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/tables', tablesRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
