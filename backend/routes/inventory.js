@@ -55,15 +55,18 @@ router.post('/sheets', [
             const delivery = entry.delivery || 0;
             const usage_amount = entry.usage_amount || 0;
             const waste = entry.waste || 0;
-            // Best practice: calculate on server to prevent manipulation, but accept provided if logic is complex.
-            // Assuming end_bal = beg_bal + delivery - usage_amount - waste
-            const calculated_end_bal = (parseFloat(beg_bal) + parseFloat(delivery)) - (parseFloat(usage_amount) + parseFloat(waste));
+            const entry_end_bal = entry.end_bal !== undefined ? parseFloat(entry.end_bal) : ((parseFloat(beg_bal) + parseFloat(delivery)) - (parseFloat(usage_amount) + parseFloat(waste)));
+            const beg_bal_unit = entry.beg_bal_unit || 'g';
+            const delivery_unit = entry.delivery_unit || 'g';
+            const usage_unit = entry.usage_unit || 'g';
+            const waste_unit = entry.waste_unit || 'g';
+            const end_bal_unit = entry.end_bal_unit || 'g';
 
             await connection.execute(
                 `INSERT INTO manual_inventory_entries 
-                (sheet_id, item_id, beg_bal, delivery, usage_amount, waste, end_bal) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [sheetId, entry.item_id, beg_bal, delivery, usage_amount, waste, calculated_end_bal]
+                (sheet_id, item_id, beg_bal, delivery, usage_amount, waste, end_bal, beg_bal_unit, delivery_unit, usage_unit, waste_unit, end_bal_unit) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [sheetId, entry.item_id, beg_bal, delivery, usage_amount, waste, entry_end_bal, beg_bal_unit, delivery_unit, usage_unit, waste_unit, end_bal_unit]
             );
         }
 
@@ -103,6 +106,43 @@ router.get('/sheets', [authenticateToken, requireRole(['owner', 'admin', 'manage
         res.json(sheets);
     } catch (error) {
         console.error('Get inventory sheets error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Get a specific sheet by date (latest for that date)
+router.get('/sheets/by-date/:date', [authenticateToken, requireRole(['owner', 'admin', 'manager', 'cashier'])], async (req, res) => {
+    try {
+        const { date } = req.params;
+
+        // Get sheet metadata
+        const [sheets] = await pool.execute(`
+            SELECT s.*, u.username as performed_by_name
+            FROM manual_inventory_sheets s
+            LEFT JOIN users u ON s.performed_by = u.id
+            WHERE s.sheet_date = ?
+            ORDER BY s.created_at DESC
+            LIMIT 1
+        `, [date]);
+
+        if (sheets.length === 0) return res.status(404).json({ error: 'Sheet not found' });
+        const sheet = sheets[0];
+
+        // Get all entries with item details
+        const [entries] = await pool.execute(`
+            SELECT 
+                e.*, 
+                i.item_code, i.description, i.category
+            FROM manual_inventory_entries e
+            JOIN manual_inventory_items i ON e.item_id = i.id
+            WHERE e.sheet_id = ?
+            ORDER BY i.display_order
+        `, [sheet.id]);
+
+        sheet.entries = entries;
+        res.json(sheet);
+    } catch (error) {
+        console.error('Get inventory sheet by date error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

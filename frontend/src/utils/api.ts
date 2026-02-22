@@ -274,6 +274,9 @@ export const inventoryAPI = {
   getSheetById: (id: number) =>
     api.get(`/inventory/sheets/${id}`),
 
+  getSheetByDate: (date: string) =>
+    api.get(`/inventory/sheets/by-date/${date}`),
+
   getLatestBalances: () =>
     api.get('/inventory/latest-balances'),
 };

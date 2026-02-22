@@ -94,6 +94,49 @@ async function updateSchema() {
             console.log('ℹ️ details column already exists in audit_logs');
         }
 
+        // Add unit_of_measurement to manual_inventory_items
+        const [unitCol] = await pool.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'manual_inventory_items' 
+            AND COLUMN_NAME = 'unit_of_measurement'
+        `);
+
+        if (unitCol.length === 0) {
+            console.log('📝 Adding unit_of_measurement column to manual_inventory_items table...');
+            await pool.execute(`
+                ALTER TABLE manual_inventory_items 
+                ADD COLUMN unit_of_measurement VARCHAR(20) DEFAULT NULL AFTER description
+            `);
+            console.log('✅ unit_of_measurement column added to items');
+        } else {
+            console.log('ℹ️ unit_of_measurement column already exists in items');
+        }
+
+        const [entryUnitCol2] = await pool.execute(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'manual_inventory_entries' 
+            AND COLUMN_NAME = 'beg_bal_unit'
+        `);
+
+        if (entryUnitCol2.length === 0) {
+            console.log('📝 Adding specific unit columns to manual_inventory_entries table...');
+            await pool.execute(`
+                ALTER TABLE manual_inventory_entries 
+                ADD COLUMN beg_bal_unit VARCHAR(20) DEFAULT 'g' AFTER beg_bal,
+                ADD COLUMN delivery_unit VARCHAR(20) DEFAULT 'g' AFTER delivery,
+                ADD COLUMN usage_unit VARCHAR(20) DEFAULT 'g' AFTER usage_amount,
+                ADD COLUMN waste_unit VARCHAR(20) DEFAULT 'g' AFTER waste,
+                ADD COLUMN end_bal_unit VARCHAR(20) DEFAULT 'g' AFTER end_bal
+            `);
+            console.log('✅ Specific unit columns added to entries');
+        } else {
+            console.log('ℹ️ Specific unit columns already exist in entries');
+        }
+
         console.log('✨ Schema update completed successfully');
         process.exit(0);
     } catch (error) {

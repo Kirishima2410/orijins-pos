@@ -82,6 +82,21 @@ const Reports: React.FC = () => {
 
   const formatCurrency = (value: number | null | undefined) => `₱${Number(value || 0).toFixed(2)}`;
 
+  const formatChartDate = (dateString: string, formatStyle: 'short' | 'long' = 'short') => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        month: formatStyle === 'short' ? 'short' : 'long',
+        day: 'numeric',
+        year: formatStyle === 'long' ? 'numeric' : undefined
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   const handleExportPDF = () => {
     toast.success('PDF export feature coming soon');
   };
@@ -163,8 +178,8 @@ const Reports: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
               <tab.icon className="w-4 h-4 mr-2" />
@@ -262,9 +277,15 @@ const Reports: React.FC = () => {
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={salesReport.sales_by_date}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="period" />
+                        <XAxis
+                          dataKey="period"
+                          tickFormatter={(value) => formatChartDate(value, 'short')}
+                        />
                         <YAxis />
-                        <Tooltip formatter={(value) => [`₱${value}`, 'Revenue']} />
+                        <Tooltip
+                          labelFormatter={(value) => formatChartDate(value, 'long')}
+                          formatter={(value) => [`₱${value}`, 'Revenue']}
+                        />
                         <Legend />
                         <Line type="monotone" dataKey="revenue" stroke="#8884d8" strokeWidth={2} />
                       </LineChart>
@@ -449,9 +470,14 @@ const Reports: React.FC = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <AreaChart data={ordersReport.daily_orders}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={(value) => formatChartDate(value, 'short')}
+                      />
                       <YAxis />
-                      <Tooltip />
+                      <Tooltip
+                        labelFormatter={(value) => formatChartDate(value, 'long')}
+                      />
                       <Legend />
                       <Area type="monotone" dataKey="order_count" stackId="1" stroke="#8884d8" fill="#8884d8" />
                       <Area type="monotone" dataKey="completed_count" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
