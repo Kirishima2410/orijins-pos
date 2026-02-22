@@ -30,11 +30,7 @@ router.get('/overview', [authenticateToken, requireRole(['owner', 'admin', 'cash
         );
 
         // Low stock alerts (Inventory)
-        const [lowStock] = await pool.execute(
-            `SELECT COUNT(*) as count 
-             FROM inventory_items 
-             WHERE stock_quantity <= low_stock_threshold`
-        );
+        const lowStock = [{ count: 0 }];
 
         // Recent orders (last 10) - avoid ONLY_FULL_GROUP_BY by using scalar subquery
         const [recentOrders] = await pool.execute(
@@ -144,45 +140,8 @@ router.get('/sales-chart', [authenticateToken, requireRole(['owner', 'admin', 'c
     }
 });
 
-// Get inventory status
-router.get('/inventory', [authenticateToken, requireRole(['owner', 'admin', 'cashier'])], async (req, res) => {
-    try {
-        // Low stock items
-        const [lowStockItems] = await pool.execute(
-            `SELECT id, name, stock_quantity, low_stock_threshold, unit, category as category_name
-             FROM inventory_items 
-             WHERE stock_quantity <= low_stock_threshold
-             ORDER BY (stock_quantity / low_stock_threshold) ASC`
-        );
-
-        // Out of stock items
-        const [outOfStockItems] = await pool.execute(
-            `SELECT id, name, unit, category as category_name
-             FROM inventory_items 
-             WHERE stock_quantity = 0
-             ORDER BY name`
-        );
-
-        // Inventory summary
-        const [inventorySummary] = await pool.execute(
-            `SELECT 
-                COUNT(*) as total_items,
-                COUNT(CASE WHEN stock_quantity = 0 THEN 1 END) as out_of_stock,
-                COUNT(CASE WHEN stock_quantity <= low_stock_threshold AND stock_quantity > 0 THEN 1 END) as low_stock,
-                COUNT(CASE WHEN stock_quantity > low_stock_threshold THEN 1 END) as in_stock
-             FROM inventory_items`
-        );
-
-        res.json({
-            summary: inventorySummary[0],
-            low_stock: lowStockItems,
-            out_of_stock: outOfStockItems
-        });
-    } catch (error) {
-        console.error('Inventory status error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+// Get inventory status -- REMOVED
+// router.get('/inventory', ...)
 
 // Get recent activity
 router.get('/activity', [authenticateToken, requireRole(['owner', 'admin', 'cashier'])], async (req, res) => {
@@ -210,16 +169,7 @@ router.get('/activity', [authenticateToken, requireRole(['owner', 'admin', 'cash
         );
 
         // System notifications (low stock, etc.)
-        const [notifications] = await pool.execute(
-            `SELECT 
-                'low_stock' as type,
-                CONCAT('Low stock alert: ', name, ' (', stock_quantity, ' ', unit, ' remaining)') as message,
-                updated_at as created_at
-             FROM inventory_items
-             WHERE stock_quantity <= low_stock_threshold
-             ORDER BY updated_at DESC
-             LIMIT 10`
-        );
+        const notifications = [];
 
         res.json({
             recent_orders: recentOrders,

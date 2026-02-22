@@ -37,7 +37,8 @@ router.post('/', [
     body('status').optional().isIn(['pending', 'in_progress', 'completed', 'ready']).withMessage('Invalid status'),
     body('discount_amount').optional().isFloat({ min: 0 }),
     body('cash_received').optional().isFloat({ min: 0 }),
-    body('change_amount').optional().isFloat({ min: 0 })
+    body('change_amount').optional().isFloat({ min: 0 }),
+    body('is_vat_applied').optional().isBoolean()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -101,39 +102,7 @@ router.post('/', [
                 variantId = v.id;
             }
 
-            // Check Inventory Stock via Recipes
-            const [recipes] = await connection.execute(
-                'SELECT inventory_item_id, quantity_required FROM recipes WHERE menu_item_id = ?',
-                [item.menu_item_id]
-            );
-
             const inventoryDeductions = [];
-
-            if (recipes.length > 0) {
-                for (const recipe of recipes) {
-                    const requiredQty = recipe.quantity_required * item.quantity;
-                    const [invItems] = await connection.execute(
-                        'SELECT name, stock_quantity, id FROM inventory_items WHERE id = ?',
-                        [recipe.inventory_item_id]
-                    );
-
-                    if (invItems.length === 0) {
-                        // Inventory item missing, skip or error? Error safest.
-                        throw new Error(`Inventory item ID ${recipe.inventory_item_id} missing (for ${menuItem.name})`);
-                    }
-
-                    const invItem = invItems[0];
-                    if (invItem.stock_quantity < requiredQty) {
-                        throw new Error(`Insufficient stock for "${menuItem.name}" (Ingredient: ${invItem.name}). Available: ${invItem.stock_quantity}`);
-                    }
-
-                    inventoryDeductions.push({
-                        inventory_item_id: invItem.id,
-                        quantity: requiredQty,
-                        name: invItem.name
-                    });
-                }
-            }
 
             const itemTotal = unitPrice * item.quantity;
             totalAmount += itemTotal;
@@ -161,16 +130,30 @@ router.post('/', [
             finalTotalAmount = Math.max(0, totalAmount - discountAmount);
         }
 
+        // Get VAT setting
+        const [settings] = await connection.execute(
+            'SELECT setting_value FROM settings WHERE setting_key = "tax_rate"'
+        );
+        const taxRate = settings.length > 0 ? parseFloat(settings[0].setting_value) || 0.12 : 0.12;
+
+        const isVatApplied = req.body.is_vat_applied === true;
+        let vatableSales = 0;
+        let vatAmount = 0;
+
+        if (isVatApplied) {
+            vatableSales = finalTotalAmount / (1 + taxRate);
+            vatAmount = finalTotalAmount - vatableSales;
+        }
+
         // Create order
         const [orderResult] = await connection.execute(
-            'INSERT INTO orders (order_number, customer_name, table_number, total_amount, discount_amount, cash_received, change_amount, payment_method, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [orderNumber, customer_name || null, table_number || null, finalTotalAmount, discountAmount, cashReceived, changeAmount, payment_method, status]
+            'INSERT INTO orders (order_number, customer_name, table_number, total_amount, discount_amount, cash_received, change_amount, payment_method, status, is_vat_applied, vatable_sales, vat_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [orderNumber, customer_name || null, table_number || null, finalTotalAmount, discountAmount, cashReceived, changeAmount, payment_method, status, isVatApplied, vatableSales, vatAmount]
         );
 
         const orderId = orderResult.insertId;
 
-        // Create order items and update stock
-        // Create order items and update stock
+        // Create order items
         for (const item of validatedItems) {
             // Insert order item
             await connection.execute(
@@ -178,35 +161,7 @@ router.post('/', [
                 [orderId, item.menu_item_id, item.menu_item_variant_id, item.variant_name, item.size_label, item.quantity, item.unit_price, item.total_price]
             );
 
-            // Update inventory based on deductions
-            if (item.inventory_deductions && item.inventory_deductions.length > 0) {
-                for (const deduction of item.inventory_deductions) {
-                    // Update stock
-                    await connection.execute(
-                        'UPDATE inventory_items SET stock_quantity = stock_quantity - ? WHERE id = ?',
-                        [deduction.quantity, deduction.inventory_item_id]
-                    );
-
-                    // Log inventory change
-                    const [currentStock] = await connection.execute(
-                        'SELECT stock_quantity FROM inventory_items WHERE id = ?',
-                        [deduction.inventory_item_id]
-                    );
-
-                    await connection.execute(
-                        'INSERT INTO inventory_logs (inventory_item_id, action_type, quantity_change, previous_stock, new_stock, reference_order_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                        [
-                            deduction.inventory_item_id,
-                            'sale',
-                            -deduction.quantity,
-                            currentStock[0].stock_quantity + deduction.quantity,
-                            currentStock[0].stock_quantity,
-                            orderId,
-                            `Sold in order ${orderNumber} (Item: ${item.menu_item_name})`
-                        ]
-                    );
-                }
-            }
+            // Inventory update logic removed
         }
 
         // Create transaction record
@@ -225,6 +180,9 @@ router.post('/', [
                 total_amount: finalTotalAmount,
                 status,
                 payment_method,
+                is_vat_applied: isVatApplied,
+                vatable_sales: vatableSales,
+                vat_amount: vatAmount,
                 items: validatedItems
             }
         });
@@ -544,44 +502,7 @@ router.post('/:id/void', [
         );
 
         // Restore stock quantities
-        // Restore stock quantities
-        for (const item of orderItems) {
-            // Get recipes for this item
-            const [recipes] = await connection.execute(
-                'SELECT inventory_item_id, quantity_required FROM recipes WHERE menu_item_id = ?',
-                [item.menu_item_id]
-            );
-
-            if (recipes.length > 0) {
-                for (const recipe of recipes) {
-                    const restoreQty = recipe.quantity_required * item.quantity;
-
-                    await connection.execute(
-                        'UPDATE inventory_items SET stock_quantity = stock_quantity + ? WHERE id = ?',
-                        [restoreQty, recipe.inventory_item_id]
-                    );
-
-                    // Log inventory restoration
-                    const [currentStock] = await connection.execute(
-                        'SELECT stock_quantity FROM inventory_items WHERE id = ?',
-                        [recipe.inventory_item_id]
-                    );
-
-                    await connection.execute(
-                        'INSERT INTO inventory_logs (inventory_item_id, action_type, quantity_change, previous_stock, new_stock, reference_order_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                        [
-                            recipe.inventory_item_id,
-                            'adjustment',
-                            restoreQty,
-                            currentStock[0].stock_quantity - restoreQty,
-                            currentStock[0].stock_quantity,
-                            id,
-                            `Stock restored from voided order ${order.order_number}`
-                        ]
-                    );
-                }
-            }
-        }
+        // Stock restoration logic removed
 
         // Void the order
         await connection.execute(

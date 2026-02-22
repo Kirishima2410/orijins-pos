@@ -259,69 +259,8 @@ router.get('/top-items', [authenticateToken, requireRole(['owner', 'admin'])], a
     }
 });
 
-// Get inventory report
-router.get('/inventory', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
-    try {
-        // Current inventory status
-        const [inventoryStatus] = await pool.execute(
-            `SELECT 
-                mi.id,
-                mi.name,
-                c.name as category_name,
-                mi.price,
-                mi.stock_quantity,
-                mi.low_stock_threshold,
-                CASE 
-                    WHEN mi.stock_quantity = 0 THEN 'Out of Stock'
-                    WHEN mi.stock_quantity <= mi.low_stock_threshold THEN 'Low Stock'
-                    ELSE 'In Stock'
-                END as status,
-                COALESCE(mi.stock_quantity * mi.price, 0) as inventory_value
-             FROM menu_items mi
-             LEFT JOIN categories c ON mi.category_id = c.id
-             WHERE mi.is_available = TRUE
-             ORDER BY mi.stock_quantity ASC, mi.name`
-        );
-
-        // Inventory summary
-        const [inventorySummary] = await pool.execute(
-            `SELECT 
-                COUNT(*) as total_items,
-                COUNT(CASE WHEN stock_quantity = 0 THEN 1 END) as out_of_stock,
-                COUNT(CASE WHEN stock_quantity <= low_stock_threshold AND stock_quantity > 0 THEN 1 END) as low_stock,
-                COUNT(CASE WHEN stock_quantity > low_stock_threshold THEN 1 END) as in_stock,
-                COALESCE(SUM(stock_quantity * price), 0) as total_inventory_value
-             FROM menu_items 
-             WHERE is_available = TRUE`
-        );
-
-        // Inventory movement (recent changes)
-        const [inventoryMovement] = await pool.execute(
-            `SELECT 
-                il.menu_item_id,
-                mi.name as item_name,
-                il.action_type,
-                il.quantity_change,
-                il.previous_stock,
-                il.new_stock,
-                il.notes,
-                il.created_at
-             FROM inventory_logs il
-             JOIN menu_items mi ON il.menu_item_id = mi.id
-             ORDER BY il.created_at DESC
-             LIMIT 50`
-        );
-
-        res.json({
-            summary: inventorySummary[0],
-            inventory_status: inventoryStatus,
-            inventory_movement: inventoryMovement
-        });
-    } catch (error) {
-        console.error('Inventory report error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
+// Inventory report logic removed
+// router.get('/inventory', ...)
 
 // Get audit logs report
 router.get('/audit-logs', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {

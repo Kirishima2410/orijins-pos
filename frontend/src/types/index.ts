@@ -83,6 +83,9 @@ export interface Order {
   items_summary?: string;
   created_at: string;
   updated_at: string;
+  is_vat_applied?: boolean;
+  vatable_sales?: number;
+  vat_amount?: number;
 }
 
 // Transaction types

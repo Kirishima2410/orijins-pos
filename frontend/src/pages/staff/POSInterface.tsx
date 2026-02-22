@@ -42,6 +42,9 @@ const POSInterface: React.FC = () => {
   const [managerCreds, setManagerCreds] = useState({ username: '', password: '' });
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // VAT Toggle
+  const [applyVat, setApplyVat] = useState(true); // Default to applying VAT
+
   // Size Selection Modal
   const [itemToSelectSize, setItemToSelectSize] = useState<MenuItem | null>(null);
 
@@ -164,6 +167,18 @@ const POSInterface: React.FC = () => {
     return subtotal;
   };
 
+  const getVatCalculations = () => {
+    const finalTotal = getFinalTotal();
+    // Assuming 12% VAT
+    const taxRate = 0.12;
+    if (!applyVat) {
+      return { vatable: 0, vat: 0 };
+    }
+    const vatable = finalTotal / (1 + taxRate);
+    const vat = finalTotal - vatable;
+    return { vatable, vat };
+  };
+
   const handleApplyDiscount = () => {
     if (discountApplied) {
       setDiscountApplied(false);
@@ -277,6 +292,10 @@ const POSInterface: React.FC = () => {
         <table class="totals">
           <tr><td style="text-align:left">SUBTOTAL</td><td style="text-align:right">${formatMoney(showDiscount ? subtotal : totalAmount)}</td></tr>
           ${showDiscount ? `<tr><td style="text-align:left">DISCOUNT</td><td style="text-align:right">-${formatMoney(order.discount_amount)}</td></tr>` : ''}
+          ${order.is_vat_applied ? `
+          <tr><td style="text-align:left" class="muted">VATable Sales</td><td style="text-align:right" class="muted">${formatMoney(order.vatable_sales || 0)}</td></tr>
+          <tr><td style="text-align:left" class="muted">VAT (12%)</td><td style="text-align:right" class="muted">${formatMoney(order.vat_amount || 0)}</td></tr>
+          ` : ''}
           <tr><td style="text-align:left">TOTAL</td><td style="text-align:right">${formatMoney(totalAmount)}</td></tr>
         </table>
         <div class="sep"></div>
@@ -328,7 +347,8 @@ const POSInterface: React.FC = () => {
         change_amount: paymentMethod === 'cash' ? (cashReceived - finalTotal) : 0,
         payment_method: paymentMethod,
         total_amount: finalTotal,
-        status: 'in_progress' // As requested: POS orders start as processing
+        status: 'in_progress', // As requested: POS orders start as processing
+        is_vat_applied: applyVat
       };
 
       if (currentOrder) {
@@ -373,6 +393,7 @@ const POSInterface: React.FC = () => {
           setCustomerName('');
           setCashReceived(0);
           setDiscountApplied(false);
+          setApplyVat(true); // Reset VAT to default after order
           toast.success('Order placed successfully!');
           navigate('/staff/orders'); // Navigate away after placing
         }
@@ -594,10 +615,23 @@ const POSInterface: React.FC = () => {
 
                   {/* Payment Details */}
                   <div className="border-t border-gray-200 pt-4 space-y-3">
-                    <h3 className="font-semibold text-gray-900 flex items-center">
+                    <h3 className="font-semibold text-gray-900 flex items-center mb-4">
                       <BanknotesIcon className="w-5 h-5 mr-2" />
                       Payment Details
                     </h3>
+
+                    {/* VAT Toggle */}
+                    <div className="flex items-center justify-between mt-2">
+                      <label className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={applyVat}
+                          onChange={(e) => setApplyVat(e.target.checked)}
+                          className="rounded text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                        />
+                        Issue VAT Receipt
+                      </label>
+                    </div>
 
                     {/* Discount Toggle */}
                     <div className="flex justify-between items-center">
@@ -611,18 +645,32 @@ const POSInterface: React.FC = () => {
                     </div>
 
                     {/* Total Calculation */}
-                    <div className="space-y-1 text-sm">
+                    <div className="space-y-1 text-sm pt-2">
                       <div className="flex justify-between text-gray-600">
                         <span>Subtotal</span>
                         <span>₱{getTotalAmount().toFixed(2)}</span>
                       </div>
                       {discountApplied && (
                         <div className="flex justify-between text-success-600 font-medium">
-                          <span>Discount</span>
+                          <span>Discount (PWD/Senior)</span>
                           <span>-₱{(getTotalAmount() - getFinalTotal()).toFixed(2)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center text-xl font-bold text-gray-900 pt-2 border-t">
+
+                      {applyVat && (
+                        <>
+                          <div className="flex justify-between text-gray-500 text-xs mt-1">
+                            <span>VATable Sales</span>
+                            <span>₱{getVatCalculations().vatable.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between text-gray-500 text-xs">
+                            <span>VAT (12%)</span>
+                            <span>₱{getVatCalculations().vat.toFixed(2)}</span>
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex justify-between items-center text-xl font-bold text-gray-900 pt-2 border-t mt-2">
                         <span>Total Due</span>
                         <span>₱{getFinalTotal().toFixed(2)}</span>
                       </div>

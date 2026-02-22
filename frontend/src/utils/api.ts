@@ -262,26 +262,20 @@ export const tablesAPI = {
 };
 
 export const inventoryAPI = {
-  getAll: () =>
-    api.get('/inventory'),
+  getItems: () =>
+    api.get('/inventory/items'),
 
-  create: (data: { name: string; sku?: string; category?: string; stock_quantity?: number; unit?: string; low_stock_threshold?: number; cost_per_unit?: number }) =>
-    api.post('/inventory', data),
+  submitSheet: (data: { sheet_date: string; department: string; entries: any[] }) =>
+    api.post('/inventory/sheets', data),
 
-  update: (id: number, data: any) =>
-    api.put(`/inventory/${id}`, data),
+  getSheets: (params?: { limit?: number; offset?: number }) =>
+    api.get('/inventory/sheets', { params }),
 
-  updateStock: (id: number, data: { quantity: number; action: string; notes?: string }) =>
-    api.patch(`/inventory/${id}/stock`, data),
+  getSheetById: (id: number) =>
+    api.get(`/inventory/sheets/${id}`),
 
-  delete: (id: number) =>
-    api.delete(`/inventory/${id}`),
-
-  getRecipe: (menuItemId: number) =>
-    api.get(`/inventory/recipes/${menuItemId}`),
-
-  updateRecipe: (menuItemId: number, data: { ingredients: { inventory_item_id: number; quantity_required: number }[] }) =>
-    api.post(`/inventory/recipes/${menuItemId}`, data),
+  getLatestBalances: () =>
+    api.get('/inventory/latest-balances'),
 };
 
 export default api;

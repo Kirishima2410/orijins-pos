@@ -145,6 +145,10 @@ const OrderManagement: React.FC = () => {
         <div class="sep"></div>
         <table class="totals">
           <tr><td style="text-align:left">SUBTOTAL</td><td style="text-align:right">${order.total_amount.toFixed(2)}</td></tr>
+          ${order.is_vat_applied ? `
+          <tr><td style="text-align:left" class="muted">VATable Sales</td><td style="text-align:right" class="muted">${formatMoney(order.vatable_sales || 0)}</td></tr>
+          <tr><td style="text-align:left" class="muted">VAT (12%)</td><td style="text-align:right" class="muted">${formatMoney(order.vat_amount || 0)}</td></tr>
+          ` : ''}
           <tr><td style="text-align:left">TOTAL</td><td style="text-align:right">${order.total_amount.toFixed(2)}</td></tr>
         </table>
         <div class="sep"></div>
