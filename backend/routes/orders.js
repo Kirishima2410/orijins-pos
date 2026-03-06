@@ -250,14 +250,10 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin', 'cashier'])],
             params.push(like, like);
         }
 
-        const { startDate, endDate } = req.query;
-        if (startDate) {
-            whereClauses.push('DATE(created_at) >= ?');
-            params.push(startDate);
-        }
-        if (endDate) {
-            whereClauses.push('DATE(created_at) <= ?');
-            params.push(endDate);
+        const { date } = req.query;
+        if (date) {
+            whereClauses.push('DATE(created_at) = ?');
+            params.push(date);
         }
 
         const whereSQL = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';

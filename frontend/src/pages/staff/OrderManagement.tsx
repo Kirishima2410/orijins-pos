@@ -28,8 +28,7 @@ const OrderManagement: React.FC = () => {
     status: '',
     payment_method: '',
     search: '',
-    startDate: '',
-    endDate: '',
+    date: '',
   });
   const [voidForm, setVoidForm] = useState({
     void_reason: '',
@@ -298,31 +297,22 @@ const OrderManagement: React.FC = () => {
               <option value="gcash">GCash</option>
             </select>
 
-            {/* Start Date Filter */}
-            <div className="form-control">
-              <input
-                type="date"
-                value={filters.startDate}
-                onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                className="input w-full"
-                placeholder="Start Date"
-              />
-            </div>
-
-            {/* End Date Filter */}
-            <div className="form-control">
-              <input
-                type="date"
-                value={filters.endDate}
-                onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                className="input w-full"
-                placeholder="End Date"
-              />
+            {/* Date Filter */}
+            <div className="form-control hover:shadow-sm focus-within:shadow-md transition-shadow">
+              <div className="relative w-full flex items-center">
+                <input
+                  type="date"
+                  value={filters.date}
+                  onChange={(e) => setFilters({ ...filters, date: e.target.value })}
+                  className="input w-full"
+                  placeholder="Date"
+                />
+              </div>
             </div>
 
             {/* Clear Filters */}
             <button
-              onClick={() => setFilters({ status: '', payment_method: '', search: '', startDate: '', endDate: '' })}
+              onClick={() => setFilters({ status: '', payment_method: '', search: '', date: '' })}
               className="btn btn-outline"
             >
               <FunnelIcon className="w-4 h-4 mr-2" />

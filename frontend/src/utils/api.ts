@@ -50,10 +50,10 @@ api.interceptors.response.use(
     } else if (error.response?.data) {
       const errorData = error.response.data as any;
       if (errorData.error) {
-        toast.error(errorData.error);
+        toast.error(errorData.error, { id: errorData.error });
       } else if (errorData.errors && errorData.errors.length > 0) {
         errorData.errors.forEach((err: any) => {
-          toast.error(err.msg || 'Validation error');
+          toast.error(err.msg || 'Validation error', { id: err.msg });
         });
       }
     } else if (error.code === 'ECONNABORTED') {
