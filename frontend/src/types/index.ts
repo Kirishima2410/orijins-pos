@@ -339,6 +339,17 @@ export interface OrdersReport {
     completed_count: number;
     voided_count: number;
   }>;
+  order_list: Array<{
+    id: number;
+    order_number: string;
+    customer_name: string | null;
+    total_amount: number;
+    payment_method: string;
+    status: string;
+    created_at: string;
+    is_voided: boolean;
+    void_reason: string | null;
+  }>;
   date_range: {
     from: string;
     to: string;

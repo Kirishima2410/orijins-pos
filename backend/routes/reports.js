@@ -162,11 +162,30 @@ router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], asyn
             [date_from, date_to]
         );
 
+        // Orders list
+        const [orderList] = await pool.execute(
+            `SELECT 
+                id,
+                order_number,
+                customer_name,
+                total_amount,
+                payment_method,
+                status,
+                created_at,
+                is_voided,
+                void_reason
+             FROM orders 
+             WHERE DATE(created_at) BETWEEN ? AND ?
+             ORDER BY created_at DESC`,
+            [date_from, date_to]
+        );
+
         res.json({
             summary: summary[0],
             orders_by_status: ordersByStatus,
             orders_by_hour: ordersByHour,
             daily_orders: dailyOrders,
+            order_list: orderList,
             date_range: { from: date_from, to: date_to }
         });
     } catch (error) {

@@ -31,6 +31,9 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx-js-style';
 
 const Reports: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'sales' | 'orders' | 'items'>('sales');
@@ -98,11 +101,168 @@ const Reports: React.FC = () => {
   };
 
   const handleExportPDF = () => {
-    toast.success('PDF export feature coming soon');
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text(`Reports - ${activeTab.toUpperCase()}`, 14, 15);
+      doc.setFontSize(10);
+      doc.text(`Date Range: ${dateRange.from} to ${dateRange.to}`, 14, 25);
+
+      if (activeTab === 'sales' && salesReport) {
+        doc.text('Sales by Category', 14, 35);
+        autoTable(doc, {
+          startY: 40,
+          head: [['Category', 'Orders', 'Quantity', 'Revenue']],
+          body: salesReport.sales_by_category.map((item: any) => [
+            item.category_name,
+            item.order_count,
+            item.total_quantity,
+            formatCurrency(item.revenue).replace('₱', 'PHP ')
+          ]),
+        });
+      } else if (activeTab === 'orders' && ordersReport) {
+        doc.text('Orders List', 14, 35);
+        autoTable(doc, {
+          startY: 40,
+          head: [['Order #', 'Date', 'Customer', 'Amount', 'Method', 'Status']],
+          body: ordersReport.order_list.map((order: any) => [
+            order.order_number,
+            formatChartDate(order.created_at, 'short'),
+            order.customer_name || '-',
+            formatCurrency(order.total_amount).replace('₱', 'PHP '),
+            order.payment_method.toUpperCase(),
+            order.status.toUpperCase()
+          ]),
+        });
+      } else if (activeTab === 'items' && topItemsReport) {
+        doc.text('Top Selling Items by Quantity', 14, 35);
+        autoTable(doc, {
+          startY: 40,
+          head: [['Rank', 'Item Name', 'Category', 'Quantity', 'Revenue']],
+          body: topItemsReport.top_by_quantity.map((item: any, index: number) => [
+            String(index + 1),
+            item.name,
+            item.category_name,
+            item.total_quantity,
+            formatCurrency(item.total_revenue as any).replace('₱', 'PHP ')
+          ]),
+        });
+      }
+      doc.save(`orijins_report_${activeTab}_${format(new Date(), 'yyyyMMdd')}.pdf`);
+      toast.success('Report exported to PDF');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Failed to export PDF');
+    }
   };
 
   const handleExportExcel = () => {
-    toast.success('Excel export feature coming soon');
+    try {
+      let data: any[] = [];
+      let sheetName = '';
+
+      if (activeTab === 'sales' && salesReport) {
+        sheetName = 'Sales Report';
+        data = salesReport.sales_by_category.map((item: any) => ({
+          'Category': item.category_name,
+          'Orders': item.order_count,
+          'Quantity': item.total_quantity,
+          'Revenue': item.revenue
+        }));
+      } else if (activeTab === 'orders' && ordersReport) {
+        sheetName = 'Orders Report';
+        data = ordersReport.order_list.map((order: any) => ({
+          'Order Number': order.order_number,
+          'Date': new Date(order.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' }),
+          'Customer': order.customer_name || '-',
+          'Amount': order.total_amount,
+          'Payment Method': order.payment_method.toUpperCase(),
+          'Status': order.status.toUpperCase()
+        }));
+      } else if (activeTab === 'items' && topItemsReport) {
+        sheetName = 'Top Items';
+        data = topItemsReport.top_by_quantity.map((item: any, index: number) => ({
+          'Rank': index + 1,
+          'Item Name': item.name,
+          'Category': item.category_name,
+          'Quantity Sold': item.total_quantity,
+          'Revenue': item.total_revenue,
+          'Avg Price': item.avg_price
+        }));
+      }
+
+      if (data.length === 0) {
+        toast.error('No data to export');
+        return;
+      }
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+
+      // Styling properties
+      const headerStyle = {
+        fill: { fgColor: { rgb: "4F81BD" } },
+        font: { color: { rgb: "FFFFFF" }, bold: true },
+        alignment: { horizontal: "center", vertical: "center" }
+      };
+
+      const cellStyle = {
+        alignment: { horizontal: "left", vertical: "center" }
+      };
+
+      // Add currency text mapping specifically for excel to ensure it shows PHP peso explicitly
+      // For headers, style them to be colored
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:Z100');
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_cell({ r: 0, c: C });
+        if (!ws[address]) continue;
+        ws[address].s = headerStyle; // Apply Header style
+      }
+
+      for (let R = 1; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const address = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[address]) continue;
+
+          ws[address].s = cellStyle; // apply standard alignment
+          // Explicitly append PHP if it resembles our financial columns but handle strings carefully
+          if (ws[address].v !== undefined && typeof ws[address].v === 'number') {
+            const headerCell = XLSX.utils.encode_cell({ r: 0, c: C });
+            const colName = ws[headerCell] ? ws[headerCell].v : '';
+            if (colName === 'Revenue' || colName === 'Amount' || colName === 'Avg Price') {
+              ws[address].v = `₱${Number(ws[address].v).toFixed(2)}`;
+              ws[address].t = 's'; // Treat as string so the ₱ doesn't break formatting
+              ws[address].s = {
+                alignment: { horizontal: "right", vertical: "center" }
+              }
+            }
+          }
+        }
+      }
+
+      // Automatically adjust column widths
+      const colWidths = [];
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        let maxLen = 10; // minimum width
+        for (let R = 0; R <= range.e.r; ++R) {
+          const address = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[address]) continue;
+          const val = ws[address].v ? ws[address].v.toString() : '';
+          if (val.length > maxLen) {
+            maxLen = val.length;
+          }
+        }
+        colWidths.push({ wch: maxLen + 2 }); // add some padding
+      }
+      ws['!cols'] = colWidths;
+
+      XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Report');
+      XLSX.writeFile(wb, `orijins_report_${activeTab}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
+      toast.success('Report exported to Excel');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error('Failed to export Excel');
+    }
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
@@ -483,6 +643,48 @@ const Reports: React.FC = () => {
                       <Area type="monotone" dataKey="completed_count" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
                     </AreaChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Orders List */}
+              <div className="card">
+                <div className="card-header">
+                  <h3 className="text-lg font-semibold text-gray-900">Orders List</h3>
+                </div>
+                <div className="card-body">
+                  <div className="overflow-x-auto">
+                    <table className="table">
+                      <thead className="table-header">
+                        <tr>
+                          <th className="table-header-cell">Order Number</th>
+                          <th className="table-header-cell">Date</th>
+                          <th className="table-header-cell">Customer</th>
+                          <th className="table-header-cell">Amount</th>
+                          <th className="table-header-cell">Payment Method</th>
+                          <th className="table-header-cell">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="table-body">
+                        {ordersReport.order_list.map((order) => (
+                          <tr key={order.id} className="table-row">
+                            <td className="table-cell font-medium">{order.order_number}</td>
+                            <td className="table-cell">{new Date(order.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</td>
+                            <td className="table-cell">{order.customer_name || '-'}</td>
+                            <td className="table-cell font-medium">{formatCurrency(order.total_amount)}</td>
+                            <td className="table-cell uppercase">{order.payment_method}</td>
+                            <td className="table-cell">
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                ${order.status === 'completed' ? 'bg-success-100 text-success-800' :
+                                  order.status === 'voided' ? 'bg-danger-100 text-danger-800' :
+                                    'bg-warning-100 text-warning-800'}`}>
+                                {order.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             </div>
