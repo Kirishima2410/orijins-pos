@@ -230,6 +230,34 @@ const POSInterface: React.FC = () => {
 
   const formatMoney = (value: number) => `₱${value.toFixed(2)}`;
 
+  const getQuickCashOptions = (total: number) => {
+    if (total <= 0) return [];
+    const options = new Set<number>();
+
+    // Add the exact total
+    options.add(Math.ceil(total));
+
+    // Common denominations
+    const denoms = [20, 50, 100, 200, 500, 1000];
+
+    // Find next multiples of 50 and 100
+    options.add(Math.ceil(total / 10) * 10);
+    options.add(Math.ceil(total / 50) * 50);
+    options.add(Math.ceil(total / 100) * 100);
+
+    // Specific large bills if they are > total
+    denoms.forEach(d => {
+      if (d > total && d <= total + 1000) {
+        options.add(d);
+      }
+    });
+
+    return Array.from(options)
+      .filter(o => o >= total)
+      .sort((a, b) => a - b)
+      .slice(0, 5); // Show top 5 relevant options
+  };
+
   const buildReceiptHTML = (order: any) => {
     const businessName = shopInfo?.shop_name || 'Orijins Coffee House';
     const address = shopInfo?.shop_address || '';
@@ -457,12 +485,12 @@ const POSInterface: React.FC = () => {
                 </div>
 
                 {/* Category Filter */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pb-2 overflow-x-auto no-scrollbar">
                   <button
                     onClick={() => setSelectedCategory(null)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${selectedCategory === null
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm border ${selectedCategory === null
+                      ? 'bg-primary-600 text-white border-primary-600 ring-2 ring-primary-100 shadow-primary-200'
+                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:text-primary-600'
                       }`}
                   >
                     All Items
@@ -471,9 +499,9 @@ const POSInterface: React.FC = () => {
                     <button
                       key={category.id}
                       onClick={() => setSelectedCategory(category.id)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${selectedCategory === category.id
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      className={`px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-200 shadow-sm border ${selectedCategory === category.id
+                        ? 'bg-primary-600 text-white border-primary-600 ring-2 ring-primary-100 shadow-primary-200'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-primary-300 hover:text-primary-600'
                         }`}
                     >
                       {category.name}
@@ -703,6 +731,20 @@ const POSInterface: React.FC = () => {
                           </div>
                         </div>
 
+                        {/* Quick Cash Suggestions */}
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {getQuickCashOptions(getFinalTotal()).map((amount) => (
+                            <button
+                              key={amount}
+                              type="button"
+                              onClick={() => setCashReceived(amount)}
+                              className="flex-1 min-w-[60px] py-2 px-1 text-[11px] font-bold border-2 border-gray-100 rounded-lg hover:border-primary-500 hover:bg-primary-50 hover:text-primary-700 transition-all text-gray-500 bg-gray-50"
+                            >
+                              ₱{amount}
+                            </button>
+                          ))}
+                        </div>
+
                         {/* Change Display */}
                         <div className="flex justify-between items-center bg-gray-50 p-3 rounded-md">
                           <span className="text-gray-600 font-medium">Change</span>
@@ -735,31 +777,20 @@ const POSInterface: React.FC = () => {
                       )}
                     </button>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        onClick={handlePrintReceipt}
-                        disabled={items.length === 0}
-                        className="btn btn-outline btn-sm"
-                      >
-                        <PrinterIcon className="w-4 h-4 mr-1" />
-                        Print
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          clearCart();
-                          setCustomerName('');
-                          setCurrentOrder(null);
-                          setCashReceived(0);
-                          setDiscountApplied(false);
-                          // If current order was loaded, maybe navigate back?
-                          if (currentOrder) navigate('/staff/orders');
-                        }}
-                        className="btn btn-outline btn-sm"
-                      >
-                        {currentOrder ? 'Cancel Edit' : 'Clear'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => {
+                        clearCart();
+                        setCustomerName('');
+                        setCurrentOrder(null);
+                        setCashReceived(0);
+                        setDiscountApplied(false);
+                        // If current order was loaded, maybe navigate back?
+                        if (currentOrder) navigate('/staff/orders');
+                      }}
+                      className="btn btn-outline btn-sm w-full"
+                    >
+                      {currentOrder ? 'Cancel Edit' : 'Clear'}
+                    </button>
                   </div>
 
                   {/* Manager Auth Modal */}
