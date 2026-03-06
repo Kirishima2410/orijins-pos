@@ -104,10 +104,12 @@ const OrderManagement: React.FC = () => {
       .map(
         (it) => `
         <tr>
-          <td style="text-align:left">${it.quantity.toFixed(1)} x</td>
-          <td style="text-align:left">${it.menu_item_name || ''}</td>
-          <td style="text-align:right">${it.unit_price.toFixed(2)}</td>
-          <td style="text-align:right">${it.total_price.toFixed(2)}</td>
+          <td style="text-align:left; vertical-align:top; white-space:nowrap; padding-right:4px;">${it.quantity.toFixed()}x</td>
+          <td style="text-align:left">
+            <div>${it.menu_item_name || ''} ${it.size_label ? `(${it.size_label})` : (it.variant_name ? `(${it.variant_name})` : '')}</div>
+            ${it.quantity > 1 ? `<div class="muted">@ ${it.unit_price.toFixed(2)} /ea</div>` : ''}
+          </td>
+          <td style="text-align:right; vertical-align:top;">${it.total_price.toFixed(2)}</td>
         </tr>`
       )
       .join('');
@@ -115,6 +117,7 @@ const OrderManagement: React.FC = () => {
     return `<!doctype html><html><head><meta charset="utf-8" />
       <title>Receipt ${order.order_number}</title>
       <style>
+        @page { margin: 0; }
         body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; margin: 0; }
         .receipt { width: 260px; padding: 12px; }
         h1 { font-size: 16px; margin: 0 0 4px 0; text-align:center; }
@@ -152,9 +155,9 @@ const OrderManagement: React.FC = () => {
         </table>
         <div class="sep"></div>
         <div style="font-size:12px">
-          <div>PAYMENT RECEIVED: <strong>${formatMoney(order.total_amount)}</strong></div>
-          <div class="muted">${order.payment_method.toUpperCase()}</div>
-          <div>CHANGE AMOUNT: ${formatMoney(0)}</div>
+          <div>${(order.payment_method || 'cash').toUpperCase() === 'CASH' ? 'CASH RECEIVED' : 'PAYMENT RECEIVED'}: <strong>${formatMoney(order.cash_received != null ? order.cash_received : order.total_amount)}</strong></div>
+          ${(order.payment_method || 'cash').toUpperCase() !== 'CASH' ? `<div class="muted">${(order.payment_method || 'cash').toUpperCase()}</div>` : ''}
+          <div>CHANGE AMOUNT: ${formatMoney(order.change_amount || 0)}</div>
         </div>
         <div class="sep"></div>
         <div class="center">Acknowledgement Receipt<br/>Thank you!</div>
@@ -560,7 +563,7 @@ const OrderManagement: React.FC = () => {
                   <div className="text-xs space-y-1">
                     {selectedOrder.items?.map((it, idx) => (
                       <div key={idx} className="flex justify-between">
-                        <span>{it.quantity.toFixed(1)} x {it.menu_item_name}</span>
+                        <span>{it.quantity.toFixed(1)} x {it.menu_item_name} {it.size_label ? `(${it.size_label})` : (it.variant_name ? `(${it.variant_name})` : '')}</span>
                         <span>{it.total_price.toFixed(2)}</span>
                       </div>
                     ))}
@@ -574,9 +577,11 @@ const OrderManagement: React.FC = () => {
                       <span>TOTAL</span><span>{selectedOrder.total_amount.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-dashed my-2"></div>
-                    <div>PAYMENT RECEIVED: {formatMoney(selectedOrder.total_amount)}</div>
-                    <div className="text-gray-600">{selectedOrder.payment_method.toUpperCase()}</div>
-                    <div>CHANGE AMOUNT: {formatMoney(0)}</div>
+                    <div>{(selectedOrder.payment_method || 'cash').toUpperCase() === 'CASH' ? 'CASH RECEIVED' : 'PAYMENT RECEIVED'}: {formatMoney(selectedOrder.cash_received != null ? selectedOrder.cash_received : selectedOrder.total_amount)}</div>
+                    {(selectedOrder.payment_method || 'cash').toUpperCase() !== 'CASH' && (
+                      <div className="text-gray-600">{selectedOrder.payment_method.toUpperCase()}</div>
+                    )}
+                    <div>CHANGE AMOUNT: {formatMoney(selectedOrder.change_amount || 0)}</div>
                   </div>
                   <div className="border-t border-dashed my-2"></div>
                   <div className="text-center text-xs">Acknowledgement Receipt<br />Thank you!</div>

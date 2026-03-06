@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { usersAPI } from '../../utils/api';
 import { User } from '../../types';
 import toast from 'react-hot-toast';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 const emptyForm = { username: '', email: '', password: '', role: 'cashier', is_active: true } as any;
 
@@ -11,6 +12,7 @@ const UserManagement: React.FC = () => {
   const [filters, setFilters] = useState({ search: '', role: '' });
   const [form, setForm] = useState<any>({ ...emptyForm });
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -31,6 +33,9 @@ const UserManagement: React.FC = () => {
     if (editingId) {
       if (!window.confirm('Save changes to this user?')) return;
       await usersAPI.update(editingId, { username: form.username, email: form.email, role: form.role, is_active: !!form.is_active });
+      if (form.password && form.password.length >= 6) {
+        await usersAPI.resetPassword(editingId, { new_password: form.password });
+      }
       toast.success('User updated successfully');
     } else {
       if (!form.password || form.password.length < 6) return;
@@ -46,6 +51,7 @@ const UserManagement: React.FC = () => {
   const startEdit = (u: User) => {
     setEditingId(u.id);
     setForm({ username: u.username, email: u.email, role: u.role, is_active: u.is_active, password: '' });
+    setShowPassword(false);
   };
 
   const remove = async (user: User) => {
@@ -66,11 +72,7 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const resetPwd = async (id: number) => {
-    const pwd = window.prompt('Enter new password (min 6 chars):');
-    if (!pwd || pwd.length < 6) return;
-    await usersAPI.resetPassword(id, { new_password: pwd });
-  };
+
 
   return (
     <div className="space-y-6">
@@ -120,7 +122,6 @@ const UserManagement: React.FC = () => {
                   </td>
                   <td className="table-cell text-right space-x-2">
                     <button className="btn btn-outline btn-sm" onClick={() => startEdit(u)}>Edit</button>
-                    <button className="btn btn-outline btn-sm" onClick={() => resetPwd(u.id)}>Reset Password</button>
                     <button className="btn btn-danger btn-sm" onClick={() => remove(u)}>{u.is_active ? 'Deactivate' : 'Delete'}</button>
                   </td>
                 </tr>
@@ -146,12 +147,26 @@ const UserManagement: React.FC = () => {
               <label className="label">Email</label>
               <input type="email" className="input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
             </div>
-            {!editingId && (
-              <div>
-                <label className="label">Password</label>
-                <input type="password" className="input" value={form.password} minLength={6} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+            <div>
+              <label className="label">{editingId ? 'New Password (Optional)' : 'Password'}</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="input pr-10"
+                  value={form.password}
+                  minLength={6}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  required={!editingId}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                </button>
               </div>
-            )}
+            </div>
             <div>
               <label className="label">Role</label>
               <select className="input" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
@@ -170,7 +185,7 @@ const UserManagement: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <button type="submit" className="btn btn-primary">{editingId ? 'Update' : 'Create User'}</button>
-            {editingId && <button type="button" className="btn btn-outline" onClick={() => { setEditingId(null); setForm({ ...emptyForm }); }}>Cancel</button>}
+            {editingId && <button type="button" className="btn btn-outline" onClick={() => { setEditingId(null); setForm({ ...emptyForm }); setShowPassword(false); }}>Cancel</button>}
           </div>
         </form>
       </div>

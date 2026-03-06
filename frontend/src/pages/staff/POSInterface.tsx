@@ -241,16 +241,20 @@ const POSInterface: React.FC = () => {
     const itemsList = order.items || items.map(i => ({
       quantity: i.quantity,
       menu_item_name: i.menu_item.name,
+      size_label: i.variant?.size_label,
+      variant_name: i.variant?.variant_name,
       unit_price: i.variant?.price || i.menu_item.price,
       total_price: (i.variant?.price || i.menu_item.price) * i.quantity
     }));
 
     const itemsRows = itemsList.map((it: any) => `
         <tr>
-          <td style="text-align:left">${Number(it.quantity).toFixed(1)} x</td>
-          <td style="text-align:left">${it.menu_item_name || it.variant_name || 'Item'}</td>
-          <td style="text-align:right">${Number(it.unit_price).toFixed(2)}</td>
-          <td style="text-align:right">${Number(it.total_price).toFixed(2)}</td>
+          <td style="text-align:left; vertical-align:top; white-space:nowrap; padding-right:4px;">${Number(it.quantity).toFixed()}x</td>
+          <td style="text-align:left">
+            <div>${it.menu_item_name || 'Item'} ${it.size_label ? `(${it.size_label})` : (it.variant_name ? `(${it.variant_name})` : '')}</div>
+            ${Number(it.quantity) > 1 ? `<div class="muted">@ ${Number(it.unit_price).toFixed(2)} /ea</div>` : ''}
+          </td>
+          <td style="text-align:right; vertical-align:top;">${Number(it.total_price).toFixed(2)}</td>
         </tr>`
     )
       .join('');
@@ -262,6 +266,7 @@ const POSInterface: React.FC = () => {
     return `<!doctype html><html><head><meta charset="utf-8" />
       <title>Receipt ${order.order_number}</title>
       <style>
+        @page { margin: 0; }
         body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; margin: 0; }
         .receipt { width: 260px; padding: 12px; }
         h1 { font-size: 16px; margin: 0 0 4px 0; text-align:center; }
@@ -300,8 +305,8 @@ const POSInterface: React.FC = () => {
         </table>
         <div class="sep"></div>
         <div style="font-size:12px">
-          <div>PAYMENT RECEIVED: <strong>${formatMoney(order.cash_received || totalAmount)}</strong></div>
-          <div class="muted">${(order.payment_method || 'cash').toUpperCase()}</div>
+          <div>${(order.payment_method || 'cash').toUpperCase() === 'CASH' ? 'CASH RECEIVED' : 'PAYMENT RECEIVED'}: <strong>${formatMoney(order.cash_received != null ? order.cash_received : totalAmount)}</strong></div>
+          ${(order.payment_method || 'cash').toUpperCase() !== 'CASH' ? `<div class="muted">${(order.payment_method || 'cash').toUpperCase()}</div>` : ''}
           <div>CHANGE AMOUNT: ${formatMoney(order.change_amount || 0)}</div>
         </div>
         <div class="sep"></div>
@@ -340,6 +345,8 @@ const POSInterface: React.FC = () => {
 
     setLoading(true);
     try {
+      const { vatable, vat } = getVatCalculations();
+
       // Common payload data
       const commonData = {
         discount_amount: discountApplied ? discount : 0,
@@ -348,7 +355,9 @@ const POSInterface: React.FC = () => {
         payment_method: paymentMethod,
         total_amount: finalTotal,
         status: 'in_progress', // As requested: POS orders start as processing
-        is_vat_applied: applyVat
+        is_vat_applied: applyVat,
+        vatable_sales: vatable,
+        vat_amount: vat
       };
 
       if (currentOrder) {

@@ -178,6 +178,9 @@ router.post('/', [
                 id: orderId,
                 order_number: orderNumber,
                 total_amount: finalTotalAmount,
+                discount_amount: discountAmount,
+                cash_received: cashReceived,
+                change_amount: changeAmount,
                 status,
                 payment_method,
                 is_vat_applied: isVatApplied,
@@ -333,7 +336,10 @@ router.patch('/:id/status', [
     body('cash_received').optional().isFloat({ min: 0 }).withMessage('Invalid cash received'),
     body('change_amount').optional().isFloat({ min: 0 }).withMessage('Invalid change amount'),
     body('payment_method').optional().isIn(['cash', 'gcash']).withMessage('Invalid payment method'),
-    body('total_amount').optional().isFloat({ min: 0 }).withMessage('Invalid total amount')
+    body('total_amount').optional().isFloat({ min: 0 }).withMessage('Invalid total amount'),
+    body('is_vat_applied').optional().isBoolean(),
+    body('vatable_sales').optional().isFloat({ min: 0 }),
+    body('vat_amount').optional().isFloat({ min: 0 })
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -342,7 +348,7 @@ router.patch('/:id/status', [
         }
 
         const { id } = req.params;
-        const { status, discount_amount, cash_received, change_amount, payment_method, total_amount } = req.body;
+        const { status, discount_amount, cash_received, change_amount, payment_method, total_amount, is_vat_applied, vatable_sales, vat_amount } = req.body;
 
         // Get current order
         const [orders] = await pool.execute(
@@ -384,6 +390,18 @@ router.patch('/:id/status', [
         if (total_amount !== undefined) {
             updates.push('total_amount = ?');
             values.push(total_amount);
+        }
+        if (is_vat_applied !== undefined) {
+            updates.push('is_vat_applied = ?');
+            values.push(is_vat_applied);
+        }
+        if (vatable_sales !== undefined) {
+            updates.push('vatable_sales = ?');
+            values.push(vatable_sales);
+        }
+        if (vat_amount !== undefined) {
+            updates.push('vat_amount = ?');
+            values.push(vat_amount);
         }
 
         values.push(id);

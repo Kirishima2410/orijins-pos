@@ -86,6 +86,8 @@ export interface Order {
   is_vat_applied?: boolean;
   vatable_sales?: number;
   vat_amount?: number;
+  cash_received?: number;
+  change_amount?: number;
 }
 
 // Transaction types
