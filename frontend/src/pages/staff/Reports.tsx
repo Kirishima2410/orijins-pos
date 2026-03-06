@@ -490,11 +490,19 @@ const Reports: React.FC = () => {
                 <div className="card-body">
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={salesReport.sales_by_category}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="category_name" />
-                      <YAxis />
-                      <Tooltip formatter={(value) => [`₱${value}`, 'Revenue']} />
-                      <Bar dataKey="revenue" fill="#8884d8" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                      <XAxis dataKey="category_name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dx={-10} />
+                      <Tooltip
+                        formatter={(value) => [`₱${value}`, 'Revenue']}
+                        cursor={{ fill: '#F3F4F6' }}
+                        contentStyle={{ borderRadius: '0.5rem', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}
+                      />
+                      <Bar dataKey="revenue" name="Revenue" maxBarSize={60} radius={[4, 4, 0, 0]}>
+                        {salesReport.sales_by_category.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -587,7 +595,8 @@ const Reports: React.FC = () => {
                           cx="50%"
                           cy="50%"
                           labelLine={false}
-                          label={({ name, percentage }) => `${name} (${percentage}%)`}
+                          nameKey="status"
+                          label={({ status, percentage }) => `${(status || '').toString().toUpperCase()} (${percentage}%)`}
                           outerRadius={80}
                           fill="#8884d8"
                           dataKey="count"
@@ -609,12 +618,17 @@ const Reports: React.FC = () => {
                   </div>
                   <div className="card-body">
                     <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={ordersReport.orders_by_hour}>
+                      <BarChart data={[...ordersReport.orders_by_hour].map(item => {
+                        const localHour = (item.hour + 8) % 24;
+                        const ampm = localHour >= 12 ? 'PM' : 'AM';
+                        const displayHour = localHour % 12 || 12;
+                        return { ...item, localHour, display_hour: `${displayHour} ${ampm}` };
+                      }).sort((a, b) => a.localHour - b.localHour)}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="hour" />
+                        <XAxis dataKey="display_hour" />
                         <YAxis />
                         <Tooltip />
-                        <Bar dataKey="order_count" fill="#8884d8" />
+                        <Bar dataKey="order_count" name="Orders" fill="#8884d8" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -639,8 +653,8 @@ const Reports: React.FC = () => {
                         labelFormatter={(value) => formatChartDate(value, 'long')}
                       />
                       <Legend />
-                      <Area type="monotone" dataKey="order_count" stackId="1" stroke="#8884d8" fill="#8884d8" />
-                      <Area type="monotone" dataKey="completed_count" stackId="1" stroke="#82ca9d" fill="#82ca9d" />
+                      <Area type="monotone" dataKey="order_count" name="Total Orders" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+                      <Area type="monotone" dataKey="completed_count" name="Completed Orders" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>

@@ -34,9 +34,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">☕</span>
-              </div>
+              <img src="/logo.png" alt="Orijins Logo" className="w-10 h-10 object-contain rounded-lg" />
               <span className="text-xl font-bold text-brown-900">Orijins</span>
             </Link>
 
@@ -102,9 +100,7 @@ const CustomerLayout: React.FC<CustomerLayoutProps> = ({ children }) => {
             {/* Company Info */}
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">☕</span>
-                </div>
+                <img src="/logo.png" alt="Orijins Logo" className="w-10 h-10 object-contain rounded-lg bg-white" />
                 <span className="text-xl font-bold">{shopInfo?.shop_name || 'Orijins'}</span>
               </div>
               <p className="text-brown-100 mb-4">

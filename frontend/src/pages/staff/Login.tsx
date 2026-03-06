@@ -9,7 +9,7 @@ const StaffLogin: React.FC = () => {
   const { login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [formData, setFormData] = useState<LoginForm>({
     username: '',
     password: '',
@@ -35,7 +35,7 @@ const StaffLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.username.trim() || !formData.password.trim()) {
       toast.error('Please fill in all fields');
       return;
@@ -68,9 +68,7 @@ const StaffLogin: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 bg-primary-600 rounded-xl mb-4">
-            <span className="text-white font-bold text-2xl">☕</span>
-          </div>
+          <img src="/logo.png" alt="Orijins Logo" className="mx-auto h-24 w-24 object-contain rounded-xl mb-4" />
           <h2 className="text-3xl font-bold text-gray-900">Staff Portal</h2>
           <p className="mt-2 text-gray-600">
             Sign in to access the coffee shop management system

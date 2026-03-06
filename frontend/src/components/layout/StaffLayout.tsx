@@ -114,9 +114,7 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-brown-200 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-amber-700 rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-lg">☕</span>
-            </div>
+            <img src="/logo.png" alt="Orijins Logo" className="w-12 h-12 object-contain rounded-lg flex-shrink-0 bg-white p-1" />
             <div className="flex flex-col">
               <span className="text-lg font-bold text-brown-900 leading-tight">Orijin POS</span>
               <span className="text-xs text-brown-600">Staff Portal</span>
