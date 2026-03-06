@@ -38,7 +38,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // Create table
 router.post('/', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('table_number').notEmpty().withMessage('Table number is required'),
     body('capacity').optional().isInt({ min: 1 }),
     body('status').optional().isIn(['available', 'occupied', 'reserved'])
@@ -91,7 +91,7 @@ router.post('/', [
 // Update table
 router.put('/:id', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('table_number').notEmpty().withMessage('Table number is required'),
     body('capacity').optional().isInt({ min: 1 }),
     body('status').optional().isIn(['available', 'occupied', 'reserved'])
@@ -135,7 +135,7 @@ router.put('/:id', [
 });
 
 // Delete table
-router.delete('/:id', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.delete('/:id', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { id } = req.params;
         const [oldTables] = await pool.execute('SELECT * FROM dining_tables WHERE id = ?', [id]);

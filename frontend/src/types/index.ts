@@ -3,7 +3,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  role: 'owner' | 'admin' | 'cashier';
+  role: 'admin' | 'manager' | 'cashier';
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -13,7 +13,7 @@ export interface AuthUser {
   id: number;
   username: string;
   email: string;
-  role: 'owner' | 'admin' | 'cashier';
+  role: 'admin' | 'manager' | 'cashier';
 }
 
 // Category types

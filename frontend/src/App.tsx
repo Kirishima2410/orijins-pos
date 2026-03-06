@@ -94,7 +94,7 @@ function App() {
               } />
 
               <Route path="/staff/users" element={
-                <ProtectedRoute requiredRoles={['owner', 'admin']}>
+                <ProtectedRoute requiredRoles={['admin']}>
                   <StaffLayout>
                     <UserManagement />
                   </StaffLayout>
@@ -102,7 +102,7 @@ function App() {
               } />
 
               <Route path="/staff/reports" element={
-                <ProtectedRoute requiredRoles={['owner', 'admin']}>
+                <ProtectedRoute requiredRoles={['admin']}>
                   <StaffLayout>
                     <Reports />
                   </StaffLayout>
@@ -110,7 +110,7 @@ function App() {
               } />
 
               <Route path="/staff/expenses" element={
-                <ProtectedRoute requiredRoles={['owner', 'admin']}>
+                <ProtectedRoute requiredRoles={['admin']}>
                   <StaffLayout>
                     <Expenses />
                   </StaffLayout>
@@ -118,7 +118,7 @@ function App() {
               } />
 
               <Route path="/staff/tables" element={
-                <ProtectedRoute requiredRoles={['owner', 'admin']}>
+                <ProtectedRoute requiredRoles={['admin']}>
                   <StaffLayout>
                     <TableManagement />
                   </StaffLayout>
@@ -126,7 +126,7 @@ function App() {
               } />
 
               <Route path="/staff/inventory" element={
-                <ProtectedRoute requiredRoles={['owner', 'admin', 'manager', 'cashier']}>
+                <ProtectedRoute requiredRoles={['admin', 'manager', 'cashier']}>
                   <StaffLayout>
                     <Inventory />
                   </StaffLayout>
@@ -134,7 +134,7 @@ function App() {
               } />
 
               <Route path="/staff/settings" element={
-                <ProtectedRoute requiredRoles={['owner', 'admin']}>
+                <ProtectedRoute requiredRoles={['admin']}>
                   <StaffLayout>
                     <Settings />
                   </StaffLayout>

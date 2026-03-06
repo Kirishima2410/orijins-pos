@@ -91,7 +91,6 @@ const UserManagement: React.FC = () => {
               <option value="cashier">Cashier</option>
               <option value="manager">Manager</option>
               <option value="admin">Admin</option>
-              <option value="owner">Owner</option>
             </select>
             <button className="btn btn-primary" onClick={load} disabled={loading}>Apply</button>
           </div>
@@ -173,7 +172,6 @@ const UserManagement: React.FC = () => {
                 <option value="cashier">Cashier</option>
                 <option value="manager">Manager</option>
                 <option value="admin">Admin</option>
-                <option value="owner">Owner</option>
               </select>
             </div>
             {editingId && (

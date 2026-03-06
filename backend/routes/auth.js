@@ -216,10 +216,10 @@ router.post('/verify-role', [
         }
 
         // Verify role
-        // Allow 'admin', 'owner', 'manager' to authorize queries requiring 'manager'
+        // Allow 'admin', 'manager' to authorize queries requiring 'manager'
         // If specific requiredRole is passed, check that.
         // For this feature, we want "Manager" or above.
-        const allowedRoles = ['admin', 'owner', 'manager'];
+        const allowedRoles = ['admin', 'manager'];
         if (requiredRole && requiredRole !== 'manager') {
             // generally strictly check if a specific role is asked, but for now we essentially want "is this a manager-level person"
             if (user.role !== requiredRole && !['admin', 'owner'].includes(user.role)) {

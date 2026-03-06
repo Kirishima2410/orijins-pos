@@ -6,7 +6,7 @@ const { authenticateToken, requireRole, hashPassword, comparePassword } = requir
 const router = express.Router();
 
 // Get all users (admin only)
-router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { search, role } = req.query;
         const page = Number(req.query.page || 1);
@@ -67,7 +67,7 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
 });
 
 // Get single user
-router.get('/:id', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/:id', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -90,11 +90,11 @@ router.get('/:id', [authenticateToken, requireRole(['owner', 'admin'])], async (
 // Create new user
 router.post('/', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').isIn(['owner', 'admin', 'manager', 'cashier']).withMessage('Invalid role')
+    body('role').isIn(['admin', 'manager', 'cashier']).withMessage('Invalid role')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -142,10 +142,10 @@ router.post('/', [
 // Update user
 router.put('/:id', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
     body('email').isEmail().withMessage('Valid email is required'),
-    body('role').isIn(['owner', 'admin', 'manager', 'cashier']).withMessage('Invalid role'),
+    body('role').isIn(['admin', 'manager', 'cashier']).withMessage('Invalid role'),
     body('is_active').isBoolean().withMessage('Active status must be boolean')
 ], async (req, res) => {
     try {
@@ -206,7 +206,7 @@ router.put('/:id', [
 // Reset user password
 router.post('/:id/reset-password', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('new_password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ], async (req, res) => {
     try {
@@ -321,13 +321,12 @@ router.delete('/:id', [authenticateToken, requireRole(['owner'])], async (req, r
 });
 
 // Get user roles for dropdown
-router.get('/roles/list', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/roles/list', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const roles = [
             { value: 'cashier', label: 'Cashier' },
             { value: 'manager', label: 'Manager' },
-            { value: 'admin', label: 'Admin' },
-            { value: 'owner', label: 'Owner' }
+            { value: 'admin', label: 'Admin' }
         ];
 
         res.json(roles);

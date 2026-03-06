@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { format, subDays } from 'date-fns';
+import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
 import { reportsAPI } from '../../utils/api';
 import { SalesReport, OrdersReport, TopItemsReport } from '../../types';
 import {
@@ -44,6 +44,10 @@ const Reports: React.FC = () => {
   const [salesReport, setSalesReport] = useState<SalesReport | null>(null);
   const [ordersReport, setOrdersReport] = useState<OrdersReport | null>(null);
   const [topItemsReport, setTopItemsReport] = useState<TopItemsReport | null>(null);
+
+  const [prevSalesReport, setPrevSalesReport] = useState<SalesReport | null>(null);
+  const [prevOrdersReport, setPrevOrdersReport] = useState<OrdersReport | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -54,19 +58,24 @@ const Reports: React.FC = () => {
     try {
       setLoading(true);
 
+      const daysDiff = differenceInDays(new Date(dateRange.to), new Date(dateRange.from)) + 1;
+      const prevFrom = format(subDays(new Date(dateRange.from), daysDiff), 'yyyy-MM-dd');
+      const prevTo = format(subDays(new Date(dateRange.to), daysDiff), 'yyyy-MM-dd');
+
       if (activeTab === 'sales') {
-        const response = await reportsAPI.getSales({
-          date_from: dateRange.from,
-          date_to: dateRange.to,
-          group_by: 'day',
-        });
-        setSalesReport(response.data);
+        const [currRes, prevRes] = await Promise.all([
+          reportsAPI.getSales({ date_from: dateRange.from, date_to: dateRange.to, group_by: 'day' }),
+          reportsAPI.getSales({ date_from: prevFrom, date_to: prevTo, group_by: 'day' })
+        ]);
+        setSalesReport(currRes.data);
+        setPrevSalesReport(prevRes.data);
       } else if (activeTab === 'orders') {
-        const response = await reportsAPI.getOrders({
-          date_from: dateRange.from,
-          date_to: dateRange.to,
-        });
-        setOrdersReport(response.data);
+        const [currRes, prevRes] = await Promise.all([
+          reportsAPI.getOrders({ date_from: dateRange.from, date_to: dateRange.to }),
+          reportsAPI.getOrders({ date_from: prevFrom, date_to: prevTo })
+        ]);
+        setOrdersReport(currRes.data);
+        setPrevOrdersReport(prevRes.data);
       } else if (activeTab === 'items') {
         const response = await reportsAPI.getTopItems({
           date_from: dateRange.from,
@@ -98,6 +107,70 @@ const Reports: React.FC = () => {
     } catch (e) {
       return dateString;
     }
+  };
+
+  const handlePresetSelect = (preset: string) => {
+    const today = new Date();
+    let from, to;
+
+    switch (preset) {
+      case 'today':
+        from = today;
+        to = today;
+        break;
+      case 'yesterday':
+        from = subDays(today, 1);
+        to = subDays(today, 1);
+        break;
+      case 'last7':
+        from = subDays(today, 6);
+        to = today;
+        break;
+      case 'thisMonth':
+        from = startOfMonth(today);
+        to = today;
+        break;
+      case 'lastMonth':
+        const lastMonth = subMonths(today, 1);
+        from = startOfMonth(lastMonth);
+        to = endOfMonth(lastMonth);
+        break;
+      default:
+        return;
+    }
+
+    setDateRange({
+      from: format(from, 'yyyy-MM-dd'),
+      to: format(to, 'yyyy-MM-dd')
+    });
+  };
+
+  const calculateGrowthCalc = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const GrowthBadge = ({ current, previous }: { current: number; previous: number }) => {
+    const growth = calculateGrowthCalc(current, previous);
+    const isPositive = growth > 0;
+    const isNeutral = growth === 0 || isNaN(growth);
+
+    if (isNeutral) {
+      return <span className="text-[10px] font-medium text-gray-400 py-0 px-1.5 bg-gray-50 rounded-full border border-gray-100 flex items-center shrink-0">0% <span className="text-[9px] text-gray-400 font-normal ml-1">vs prev</span></span>;
+    }
+
+    return (
+      <span className={`text-[10px] font-medium py-0 px-1.5 rounded-full border flex items-center shrink-0 whitespace-nowrap ${isPositive ? 'text-green-700 bg-green-50 border-green-100' : 'text-red-700 bg-red-50 border-red-100'
+        }`}>
+        {isPositive ? (
+          <ArrowTrendingUpIcon className="w-2.5 h-2.5 mr-0.5" />
+        ) : (
+          <ArrowTrendingUpIcon className="w-2.5 h-2.5 mr-0.5 rotate-180" />
+        )}
+        {Math.abs(growth).toFixed(0)}%
+        <span className="text-[9px] text-gray-400 font-normal ml-0.5 opacity-80">vs prev</span>
+      </span>
+    );
   };
 
   const handleExportPDF = () => {
@@ -304,25 +377,36 @@ const Reports: React.FC = () => {
       {/* Date Range Selector */}
       <div className="card">
         <div className="card-body">
-          <div className="flex items-center space-x-4">
-            <CalendarIcon className="w-5 h-5 text-gray-400" />
-            <div className="flex items-center space-x-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0 text-sm">
+            <div className="flex items-center space-x-4">
+              <CalendarIcon className="w-5 h-5 text-gray-400" />
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={() => handlePresetSelect('today')} className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors">Today</button>
+                <button onClick={() => handlePresetSelect('yesterday')} className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors">Yesterday</button>
+                <button onClick={() => handlePresetSelect('last7')} className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors">Last 7 Days</button>
+                <button onClick={() => handlePresetSelect('thisMonth')} className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors">This Month</button>
+                <button onClick={() => handlePresetSelect('lastMonth')} className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors">Last Month</button>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3 bg-gray-50 p-2 rounded-lg border border-gray-200">
               <div>
-                <label className="label">From Date</label>
+                <label className="sr-only">From Date</label>
                 <input
                   type="date"
                   value={dateRange.from}
                   onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                  className="input"
+                  className="input py-1 text-sm border-none bg-transparent"
                 />
               </div>
+              <span className="text-gray-400">→</span>
               <div>
-                <label className="label">To Date</label>
+                <label className="sr-only">To Date</label>
                 <input
                   type="date"
                   value={dateRange.to}
                   onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                  className="input"
+                  className="input py-1 text-sm border-none bg-transparent"
                 />
               </div>
             </div>
@@ -369,9 +453,12 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {formatCurrency(salesReport.summary.total_revenue as any)}
-                        </p>
+                        <div className="flex items-center flex-wrap gap-x-2 mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {formatCurrency(salesReport.summary.total_revenue as any)}
+                          </p>
+                          {prevSalesReport && <GrowthBadge current={salesReport.summary.total_revenue} previous={prevSalesReport.summary.total_revenue} />}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -385,9 +472,12 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {salesReport.summary.total_orders}
-                        </p>
+                        <div className="flex items-center flex-wrap gap-x-2 mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {salesReport.summary.total_orders}
+                          </p>
+                          {prevSalesReport && <GrowthBadge current={salesReport.summary.total_orders} previous={prevSalesReport.summary.total_orders} />}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -401,9 +491,12 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Average Order Value</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {formatCurrency(salesReport.summary.avg_order_value as any)}
-                        </p>
+                        <div className="flex items-center flex-wrap gap-x-2 mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {formatCurrency(salesReport.summary.avg_order_value as any)}
+                          </p>
+                          {prevSalesReport && <GrowthBadge current={salesReport.summary.avg_order_value} previous={prevSalesReport.summary.avg_order_value} />}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -417,9 +510,11 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Max Order Value</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {formatCurrency(salesReport.summary.max_order_value as any)}
-                        </p>
+                        <div className="flex items-center mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {formatCurrency(salesReport.summary.max_order_value as any)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -523,9 +618,12 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {ordersReport.summary.total_orders}
-                        </p>
+                        <div className="flex items-center flex-wrap gap-x-2 mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {ordersReport.summary.total_orders}
+                          </p>
+                          {prevOrdersReport && <GrowthBadge current={ordersReport.summary.total_orders} previous={prevOrdersReport.summary.total_orders} />}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -539,9 +637,11 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Completed</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {ordersReport.summary.completed_orders}
-                        </p>
+                        <div className="flex items-center mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {ordersReport.summary.completed_orders}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -555,9 +655,11 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Voided</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {ordersReport.summary.voided_orders}
-                        </p>
+                        <div className="flex items-center mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {ordersReport.summary.voided_orders}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -571,9 +673,11 @@ const Reports: React.FC = () => {
                       </div>
                       <div className="ml-4">
                         <p className="text-sm font-medium text-gray-600">Avg Prep Time</p>
-                        <p className="text-2xl font-semibold text-gray-900">
-                          {ordersReport.summary.avg_preparation_time || 0} min
-                        </p>
+                        <div className="flex items-center mt-1">
+                          <p className="text-2xl font-semibold text-gray-900 leading-none">
+                            {ordersReport.summary.avg_preparation_time || 0} min
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

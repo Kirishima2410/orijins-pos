@@ -450,7 +450,7 @@ const OrderManagement: React.FC = () => {
                         )}
 
                         {/* Void Button (Admin only) */}
-                        {!order.is_voided && ['pending', 'in_progress'].includes(order.status) && (user?.role === 'owner' || user?.role === 'admin') && (
+                        {!order.is_voided && ['pending', 'in_progress'].includes(order.status) && (user?.role === 'admin') && (
                           <button
                             onClick={() => {
                               setSelectedOrder(order);

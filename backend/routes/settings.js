@@ -6,7 +6,7 @@ const { authenticateToken, requireRole } = require('../config/auth');
 const router = express.Router();
 
 // Get all settings
-router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const [settings] = await pool.execute(
             'SELECT * FROM settings ORDER BY setting_key'
@@ -49,7 +49,7 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
 });
 
 // Get single setting
-router.get('/:key', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/:key', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { key } = req.params;
 
@@ -93,7 +93,7 @@ router.get('/:key', [authenticateToken, requireRole(['owner', 'admin'])], async 
 // Update setting
 router.put('/:key', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('value').notEmpty().withMessage('Setting value is required')
 ], async (req, res) => {
     try {
@@ -161,7 +161,7 @@ router.put('/:key', [
 // Update multiple settings
 router.put('/', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('settings').isObject().withMessage('Settings object is required')
 ], async (req, res) => {
     try {

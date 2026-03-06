@@ -6,7 +6,7 @@ const { authenticateToken, requireRole } = require('../config/auth');
 const router = express.Router();
 
 // List expenses with filters
-router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { search, category, date_from, date_to, min_amount, max_amount, page = 1, limit = 20 } = req.query;
 
@@ -72,7 +72,7 @@ router.get('/', [authenticateToken, requireRole(['owner', 'admin'])], async (req
 // Create expense
 router.post('/', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('description').isLength({ min: 2 }).withMessage('Description is required'),
     body('amount').isFloat({ gt: 0 }).withMessage('Amount must be greater than 0'),
     body('expense_date').isISO8601().withMessage('Valid date is required'),
@@ -98,7 +98,7 @@ router.post('/', [
 // Update expense
 router.put('/:id', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('description').isLength({ min: 2 }).withMessage('Description is required'),
     body('amount').isFloat({ gt: 0 }).withMessage('Amount must be greater than 0'),
     body('expense_date').isISO8601().withMessage('Valid date is required'),
@@ -124,7 +124,7 @@ router.put('/:id', [
 });
 
 // Delete expense
-router.delete('/:id', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.delete('/:id', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { id } = req.params;
         await pool.execute('DELETE FROM expenses WHERE id = ?', [id]);

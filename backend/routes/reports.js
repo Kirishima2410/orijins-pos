@@ -5,7 +5,7 @@ const { authenticateToken, requireRole } = require('../config/auth');
 const router = express.Router();
 
 // Get sales report
-router.get('/sales', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/sales', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { date_from, date_to, group_by = 'day' } = req.query;
 
@@ -103,7 +103,7 @@ router.get('/sales', [authenticateToken, requireRole(['owner', 'admin'])], async
 });
 
 // Get orders report
-router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/orders', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { date_from, date_to } = req.query;
 
@@ -195,7 +195,7 @@ router.get('/orders', [authenticateToken, requireRole(['owner', 'admin'])], asyn
 });
 
 // Get top selling items report
-router.get('/top-items', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/top-items', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { date_from, date_to, limit = 10 } = req.query;
 
@@ -282,7 +282,7 @@ router.get('/top-items', [authenticateToken, requireRole(['owner', 'admin'])], a
 // router.get('/inventory', ...)
 
 // Get audit logs report
-router.get('/audit-logs', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/audit-logs', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { date_from, date_to, user_id, action, page = 1, limit = 50 } = req.query;
 

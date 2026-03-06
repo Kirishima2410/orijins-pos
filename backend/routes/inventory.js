@@ -6,7 +6,7 @@ const { authenticateToken, requireRole } = require('../config/auth');
 const router = express.Router();
 
 // Get predefined inventory items
-router.get('/items', [authenticateToken, requireRole(['owner', 'admin', 'manager', 'cashier'])], async (req, res) => {
+router.get('/items', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const [items] = await pool.execute(
             'SELECT * FROM manual_inventory_items WHERE is_active = TRUE ORDER BY display_order'
@@ -21,7 +21,7 @@ router.get('/items', [authenticateToken, requireRole(['owner', 'admin', 'manager
 // Submit a new manual inventory sheet
 router.post('/sheets', [
     authenticateToken,
-    requireRole(['owner', 'admin', 'manager', 'cashier']),
+    requireRole(['admin', 'manager', 'cashier']),
     body('sheet_date').isDate().withMessage('Valid sheet date is required'),
     body('department').notEmpty().withMessage('Department is required'),
     body('entries').isArray({ min: 1 }).withMessage('At least one entry is required'),
@@ -88,7 +88,7 @@ router.post('/sheets', [
 });
 
 // Get historical sheets (metadata only)
-router.get('/sheets', [authenticateToken, requireRole(['owner', 'admin', 'manager', 'cashier'])], async (req, res) => {
+router.get('/sheets', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const { limit = 50, offset = 0 } = req.query;
 
@@ -111,7 +111,7 @@ router.get('/sheets', [authenticateToken, requireRole(['owner', 'admin', 'manage
 });
 
 // Get a specific sheet by date (latest for that date)
-router.get('/sheets/by-date/:date', [authenticateToken, requireRole(['owner', 'admin', 'manager', 'cashier'])], async (req, res) => {
+router.get('/sheets/by-date/:date', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const { date } = req.params;
 
@@ -148,7 +148,7 @@ router.get('/sheets/by-date/:date', [authenticateToken, requireRole(['owner', 'a
 });
 
 // Get a specific sheet with all entries
-router.get('/sheets/:id', [authenticateToken, requireRole(['owner', 'admin', 'manager', 'cashier'])], async (req, res) => {
+router.get('/sheets/:id', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -183,7 +183,7 @@ router.get('/sheets/:id', [authenticateToken, requireRole(['owner', 'admin', 'ma
 });
 
 // Get the most recent ending balances to pre-fill the next sheet's beginning balances
-router.get('/latest-balances', [authenticateToken, requireRole(['owner', 'admin', 'manager', 'cashier'])], async (req, res) => {
+router.get('/latest-balances', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         // Find the most recent sheet ID
         const [latestSheet] = await pool.execute(

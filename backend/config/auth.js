@@ -62,15 +62,11 @@ const requireRole = (roles) => {
     };
 };
 
-// Check if user is admin or owner
-const isAdminOrOwner = (user) => {
-    return user && (user.role === 'admin' || user.role === 'owner');
+// Check if user is admin
+const isAdmin = (user) => {
+    return user && user.role === 'admin';
 };
 
-// Check if user is owner
-const isOwner = (user) => {
-    return user && user.role === 'owner';
-};
 
 module.exports = {
     generateToken,
@@ -79,6 +75,5 @@ module.exports = {
     comparePassword,
     authenticateToken,
     requireRole,
-    isAdminOrOwner,
-    isOwner
+    isAdmin
 };

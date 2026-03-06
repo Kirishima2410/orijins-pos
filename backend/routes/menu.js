@@ -126,7 +126,7 @@ router.get('/items/:id', async (req, res) => {
 // Admin routes for menu management
 
 // Get all categories (admin)
-router.get('/admin/categories', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.get('/admin/categories', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const [categories] = await pool.execute(
             'SELECT * FROM categories ORDER BY display_order, name'
@@ -142,7 +142,7 @@ router.get('/admin/categories', [authenticateToken, requireRole(['owner', 'admin
 // Create new category
 router.post('/admin/categories', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('name').notEmpty().withMessage('Category name is required'),
     body('description').optional().isString(),
     body('display_order').optional().isInt({ min: 0 })
@@ -183,7 +183,7 @@ router.post('/admin/categories', [
 // Update category
 router.put('/admin/categories/:id', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('name').notEmpty().withMessage('Category name is required'),
     body('description').optional().isString(),
     body('display_order').optional().isInt({ min: 0 })
@@ -233,7 +233,7 @@ router.put('/admin/categories/:id', [
 });
 
 // Delete category
-router.delete('/admin/categories/:id', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.delete('/admin/categories/:id', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -275,7 +275,7 @@ router.delete('/admin/categories/:id', [authenticateToken, requireRole(['owner',
 });
 
 // Get all menu items (admin)
-router.get('/admin/items', [authenticateToken, requireRole(['owner', 'admin', 'cashier'])], async (req, res) => {
+router.get('/admin/items', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
     try {
         const [items] = await pool.execute(
             `SELECT mi.*, c.name as category_name 
@@ -294,7 +294,7 @@ router.get('/admin/items', [authenticateToken, requireRole(['owner', 'admin', 'c
 // Create new menu item
 router.post('/admin/items', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('name').notEmpty().withMessage('Item name is required'),
     body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
     body('category_id').isInt().withMessage('Category is required'),
@@ -334,7 +334,7 @@ router.post('/admin/items', [
 // Update menu item
 router.put('/admin/items/:id', [
     authenticateToken,
-    requireRole(['owner', 'admin']),
+    requireRole(['admin']),
     body('name').notEmpty().withMessage('Item name is required'),
     body('price').isFloat({ min: 0 }).withMessage('Price must be a positive number'),
     body('category_id').isInt().withMessage('Category is required')
@@ -386,7 +386,7 @@ router.put('/admin/items/:id', [
 // Update stock quantity
 router.patch('/admin/items/:id/stock', [
     authenticateToken,
-    requireRole(['owner', 'admin', 'cashier']),
+    requireRole(['admin', 'cashier']),
     body('quantity').isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
     body('action').isIn(['set', 'add', 'subtract']).withMessage('Action must be set, add, or subtract'),
     body('notes').optional().isString()
@@ -463,7 +463,7 @@ router.patch('/admin/items/:id/stock', [
 });
 
 // Delete menu item
-router.delete('/admin/items/:id', [authenticateToken, requireRole(['owner', 'admin'])], async (req, res) => {
+router.delete('/admin/items/:id', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { id } = req.params;
 
