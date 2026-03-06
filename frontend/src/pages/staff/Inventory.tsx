@@ -3,6 +3,7 @@ import { inventoryAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface InventoryItem {
     id: number;
@@ -32,6 +33,7 @@ const Inventory: React.FC = () => {
     const [entries, setEntries] = useState<Record<number, InventoryEntry>>({});
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const { user } = useAuth();
 
     // Header Info
     const [sheetDate, setSheetDate] = useState(new Date().toISOString().split('T')[0]);
@@ -41,6 +43,12 @@ const Inventory: React.FC = () => {
         loadData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sheetDate]);
+
+    const handleResetReload = () => {
+        if (window.confirm('Are you sure you want to reset/reload the sheet? Any unsaved changes will be lost.')) {
+            loadData();
+        }
+    };
 
     const loadData = async () => {
         try {
@@ -196,7 +204,7 @@ const Inventory: React.FC = () => {
                 bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.1, textColor: 20, cellPadding: 1, fontSize: 8 },
                 body: [
                     ['Sheet No.:', '', 'Date:', sheetDate],
-                    ['Performed By:', '', 'Department:', department]
+                    ['Performed By:', user?.username || '', 'Department:', department]
                 ],
                 columnStyles: {
                     0: { cellWidth: 30, fontStyle: 'bold' },
@@ -247,7 +255,7 @@ const Inventory: React.FC = () => {
                 bodyStyles: { lineColor: [0, 0, 0], lineWidth: 0.1, textColor: 20, cellPadding: 2, fontSize: 9 },
                 body: [
                     ['OIC Name & Signature:', ''],
-                    ['Your signature:', '']
+                    ['Your signature:', user?.username || '']
                 ],
                 columnStyles: {
                     0: { cellWidth: 50 },
@@ -276,7 +284,7 @@ const Inventory: React.FC = () => {
                 <div className="flex gap-4">
                     <button
                         type="button"
-                        onClick={loadData}
+                        onClick={handleResetReload}
                         className="btn btn-secondary"
                         disabled={submitting}
                     >
@@ -327,7 +335,18 @@ const Inventory: React.FC = () => {
                         onChange={(e) => setDepartment(e.target.value)}
                     />
                 </div>
-                {/* We rely on the auth token for "Performed By", but we can show it here if needed */}
+                {/* Performed By Info */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Performed By
+                    </label>
+                    <input
+                        type="text"
+                        disabled
+                        className="input-field bg-gray-50 text-gray-500 cursor-not-allowed capitalize"
+                        value={user?.username || ''}
+                    />
+                </div>
             </div>
 
             {/* Grid */}
