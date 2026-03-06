@@ -19,7 +19,7 @@ const Settings: React.FC = () => {
   const [settings, setSettings] = useState<SettingsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'business' | 'pos' | 'notifications'>('general');
+  const [activeTab, setActiveTab] = useState<'business' | 'payment'>('business');
 
   useEffect(() => {
     loadSettings();
@@ -108,10 +108,8 @@ const Settings: React.FC = () => {
   }
 
   const tabs = [
-    { id: 'general', name: 'General', icon: Cog6ToothIcon },
-    { id: 'business', name: 'Business Info', icon: BuildingStorefrontIcon },
-    { id: 'pos', name: 'POS Settings', icon: CurrencyDollarIcon },
-    { id: 'notifications', name: 'Notifications', icon: BellIcon },
+    { id: 'business', name: 'Business & General', icon: BuildingStorefrontIcon },
+    { id: 'payment', name: 'Payment Settings', icon: CurrencyDollarIcon },
   ];
 
   return (
@@ -162,8 +160,8 @@ const Settings: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-500 text-primary-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
             >
               <tab.icon className="w-4 h-4 mr-2" />
@@ -175,96 +173,6 @@ const Settings: React.FC = () => {
 
       {/* Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* General Settings */}
-        {activeTab === 'general' && (
-          <div className="space-y-6">
-            <div className="card">
-              <div className="card-header">
-                <h3 className="text-lg font-semibold text-gray-900">System Settings</h3>
-              </div>
-              <div className="card-body space-y-4">
-                <div>
-                  <label className="label">Currency</label>
-                  <input
-                    type="text"
-                    value={settings.currency.value}
-                    onChange={(e) => updateSetting('currency', e.target.value)}
-                    className="input"
-                    placeholder="PHP"
-                  />
-                </div>
-
-                <div>
-                  <label className="label">Currency Symbol</label>
-                  <input
-                    type="text"
-                    value={settings.currency_symbol.value}
-                    onChange={(e) => updateSetting('currency_symbol', e.target.value)}
-                    className="input"
-                    placeholder="₱"
-                  />
-                </div>
-
-                <div>
-                  <label className="label">Tax Rate (%)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    value={settings.tax_rate.value * 100}
-                    onChange={(e) => updateSetting('tax_rate', parseFloat(e.target.value) / 100)}
-                    className="input"
-                    placeholder="12"
-                  />
-                </div>
-
-                <div>
-                  <label className="label">Session Timeout (seconds)</label>
-                  <input
-                    type="number"
-                    min="300"
-                    max="86400"
-                    value={settings.session_timeout.value}
-                    onChange={(e) => updateSetting('session_timeout', parseInt(e.target.value))}
-                    className="input"
-                    placeholder="3600"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-header">
-                <h3 className="text-lg font-semibold text-gray-900">Order Settings</h3>
-              </div>
-              <div className="card-body space-y-4">
-                <div>
-                  <label className="label">Order Number Prefix</label>
-                  <input
-                    type="text"
-                    value={settings.order_number_prefix.value}
-                    onChange={(e) => updateSetting('order_number_prefix', e.target.value)}
-                    className="input"
-                    placeholder="ORD"
-                  />
-                </div>
-
-                <div>
-                  <label className="label">Receipt Footer</label>
-                  <textarea
-                    value={settings.receipt_footer.value}
-                    onChange={(e) => updateSetting('receipt_footer', e.target.value)}
-                    className="input"
-                    rows={3}
-                    placeholder="Thank you for your business!"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Business Information */}
         {activeTab === 'business' && (
           <div className="space-y-6">
@@ -316,6 +224,20 @@ const Settings: React.FC = () => {
                     placeholder="info@coffeeshop.com"
                   />
                 </div>
+
+                <div>
+                  <label className="label">Tax Rate (%)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={settings.tax_rate.value * 100}
+                    onChange={(e) => updateSetting('tax_rate', parseFloat(e.target.value) / 100)}
+                    className="input"
+                    placeholder="12"
+                  />
+                </div>
               </div>
             </div>
 
@@ -345,8 +267,8 @@ const Settings: React.FC = () => {
           </div>
         )}
 
-        {/* POS Settings */}
-        {activeTab === 'pos' && (
+        {/* Payment Settings */}
+        {activeTab === 'payment' && (
           <div className="space-y-6">
             <div className="card">
               <div className="card-header">
@@ -378,90 +300,6 @@ const Settings: React.FC = () => {
                       </div>
                       <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-header">
-                <h3 className="text-lg font-semibold text-gray-900">Inventory Settings</h3>
-              </div>
-              <div className="card-body space-y-4">
-                <div>
-                  <label className="label">Default Low Stock Threshold</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={settings.low_stock_threshold.value}
-                    onChange={(e) => updateSetting('low_stock_threshold', parseInt(e.target.value))}
-                    className="input"
-                    placeholder="5"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Notifications */}
-        {activeTab === 'notifications' && (
-          <div className="space-y-6">
-            <div className="card">
-              <div className="card-header">
-                <h3 className="text-lg font-semibold text-gray-900">Notification Settings</h3>
-              </div>
-              <div className="card-body space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="label">Enable Notifications</label>
-                    <p className="text-sm text-gray-600">Receive system notifications</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.enable_notifications.value}
-                      onChange={(e) => updateSetting('enable_notifications', e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="card">
-              <div className="card-header">
-                <h3 className="text-lg font-semibold text-gray-900">System Information</h3>
-              </div>
-              <div className="card-body space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <ExclamationTriangleIcon className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-800">
-                        Settings Information
-                      </h3>
-                      <div className="mt-2 text-sm text-blue-700">
-                        <p>
-                          Changes to these settings will affect the entire system.
-                          Make sure to test any changes in a safe environment before applying to production.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="font-medium text-gray-900">Current User</p>
-                    <p className="text-gray-600">{user?.username} ({user?.role})</p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Last Updated</p>
-                    <p className="text-gray-600">Just now</p>
                   </div>
                 </div>
               </div>
