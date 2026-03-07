@@ -122,7 +122,15 @@ router.post('/', [
         // Apply discount if provided
         let finalTotalAmount = totalAmount;
         const discountAmount = req.body.discount_amount ? Number(req.body.discount_amount) : 0.00;
-        const cashReceived = req.body.cash_received ? Number(req.body.cash_received) : 0.00;
+        
+        let cashReceived = req.body.cash_received ? Number(req.body.cash_received) : 0.00;
+        if (payment_method === 'gcash') {
+            const calculatedTotal = finalTotalAmount - discountAmount;
+            if (cashReceived === 0 || cashReceived < calculatedTotal) {
+                cashReceived = calculatedTotal;
+            }
+        }
+
         const changeAmount = req.body.change_amount ? Number(req.body.change_amount) : 0.00;
         const status = req.body.status || 'pending';
 

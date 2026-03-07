@@ -12,6 +12,9 @@ const CustomerOrderConfirmation: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Scroll to top of page when component mounts
+    window.scrollTo(0, 0);
+
     let intervalId: NodeJS.Timeout;
 
     if (orderNumber) {

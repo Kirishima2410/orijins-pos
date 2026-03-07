@@ -155,7 +155,7 @@ const OrderManagement: React.FC = () => {
         </table>
         <div class="sep"></div>
         <div style="font-size:12px">
-          <div>${(order.payment_method || 'cash').toUpperCase() === 'CASH' ? 'CASH RECEIVED' : 'PAYMENT RECEIVED'}: <strong>${formatMoney(order.cash_received != null ? order.cash_received : order.total_amount)}</strong></div>
+          <div>${(order.payment_method || 'cash').toUpperCase() === 'CASH' ? 'CASH RECEIVED' : 'PAYMENT RECEIVED'}: <strong>${formatMoney(order.cash_received ? order.cash_received : order.total_amount)}</strong></div>
           ${(order.payment_method || 'cash').toUpperCase() !== 'CASH' ? `<div class="muted">${(order.payment_method || 'cash').toUpperCase()}</div>` : ''}
           <div>CHANGE AMOUNT: ${formatMoney(order.change_amount || 0)}</div>
         </div>
@@ -577,7 +577,7 @@ const OrderManagement: React.FC = () => {
                       <span>TOTAL</span><span>{selectedOrder.total_amount.toFixed(2)}</span>
                     </div>
                     <div className="border-t border-dashed my-2"></div>
-                    <div>{(selectedOrder.payment_method || 'cash').toUpperCase() === 'CASH' ? 'CASH RECEIVED' : 'PAYMENT RECEIVED'}: {formatMoney(selectedOrder.cash_received != null ? selectedOrder.cash_received : selectedOrder.total_amount)}</div>
+                    <div>{(selectedOrder.payment_method || 'cash').toUpperCase() === 'CASH' ? 'CASH RECEIVED' : 'PAYMENT RECEIVED'}: {formatMoney(selectedOrder.cash_received ? selectedOrder.cash_received : selectedOrder.total_amount)}</div>
                     {(selectedOrder.payment_method || 'cash').toUpperCase() !== 'CASH' && (
                       <div className="text-gray-600">{selectedOrder.payment_method.toUpperCase()}</div>
                     )}

@@ -4,7 +4,6 @@ import { useCart } from '../../contexts/CartContext';
 import { ordersAPI, settingsAPI } from '../../utils/api';
 import { ShopInfo } from '../../types';
 import { TrashIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
-import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
 
 const CustomerCheckout: React.FC = () => {
@@ -13,19 +12,11 @@ const CustomerCheckout: React.FC = () => {
   const [shopInfo, setShopInfo] = useState<ShopInfo | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'gcash'>('cash');
   const [customerName, setCustomerName] = useState('');
-  const [gcashQR, setGcashQR] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     loadShopInfo();
   }, []);
-
-  useEffect(() => {
-    if (paymentMethod === 'gcash' && shopInfo?.gcash_number) {
-      generateGCashQR();
-    }
-  }, [paymentMethod, shopInfo]);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -39,25 +30,6 @@ const CustomerCheckout: React.FC = () => {
       setShopInfo(response.data);
     } catch (error) {
       console.error('Error loading shop info:', error);
-    }
-  };
-
-  const generateGCashQR = async () => {
-    if (!shopInfo?.gcash_number) return;
-
-    try {
-      const qrData = `gcash://pay?phone=${shopInfo.gcash_number}&amount=${getTotalAmount()}`;
-      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF',
-        },
-      });
-      setGcashQR(qrCodeDataURL);
-    } catch (error) {
-      console.error('Error generating QR code:', error);
     }
   };
 
@@ -235,31 +207,32 @@ const CustomerCheckout: React.FC = () => {
                 </div>
               </div>
 
-              {/* GCash QR Code */}
+              {/* GCash Instructions */}
               {paymentMethod === 'gcash' && (
-                <div>
-                  <button
-                    onClick={() => setShowQR(!showQR)}
-                    className="btn btn-outline w-full"
-                  >
-                    {showQR ? 'Hide' : 'Show'} GCash QR Code
-                  </button>
-
-                  {showQR && gcashQR && (
-                    <div className="mt-4 text-center">
-                      <div className="inline-block p-4 bg-white border border-gray-200 rounded-lg">
-                        <img src={gcashQR} alt="GCash QR Code" className="mx-auto" />
-                      </div>
-                      <p className="text-sm text-gray-600 mt-2">
-                        Scan to pay ₱{getTotalAmount().toFixed(2)}
-                      </p>
-                      {shopInfo?.gcash_number && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Or send to: {shopInfo.gcash_number}
-                        </p>
-                      )}
+                <div className="bg-primary-50 border border-primary-200 rounded-lg p-5">
+                  <h3 className="font-semibold text-primary-900 mb-2">Manual GCash Payment</h3>
+                  <p className="text-sm text-primary-800 mb-4">
+                    Please send the exact amount of <span className="font-bold">₱{getTotalAmount().toFixed(2)}</span> to the GCash number below:
+                  </p>
+                  
+                  {shopInfo?.gcash_number ? (
+                    <div className="bg-white rounded-md border border-primary-200 p-3 text-center mb-4">
+                      <span className="text-2xl font-bold tracking-wider text-gray-900">{shopInfo.gcash_number}</span>
                     </div>
+                  ) : (
+                    <p className="text-sm text-red-600 mb-4">GCash number not configured. Please ask the staff.</p>
                   )}
+                  
+                  <div className="text-sm text-primary-800 bg-white/50 rounded-md p-3">
+                    <p className="font-medium mb-1">How to pay:</p>
+                    <ol className="list-decimal pl-4 space-y-1">
+                      <li>Open your GCash App</li>
+                      <li>Select "Send Money" or "Express Send"</li>
+                      <li>Enter the shop's GCash number</li>
+                      <li>Send <span className="font-bold">₱{getTotalAmount().toFixed(2)}</span></li>
+                      <li>Show your confirmed payment to the staff</li>
+                    </ol>
+                  </div>
                 </div>
               )}
 
