@@ -122,6 +122,14 @@ export const menuAPI = {
 
   deleteItem: (id: number) =>
     api.delete(`/menu/admin/items/${id}`),
+
+  uploadImage: (imageBlob: Blob, filename: string) => {
+    const formData = new FormData();
+    formData.append('image', imageBlob, filename);
+    return api.post('/menu/admin/upload/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export const ordersAPI = {
