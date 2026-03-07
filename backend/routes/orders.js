@@ -467,7 +467,6 @@ router.post('/:id/void', [
     authenticateToken,
     requireRole(['admin']),
     body('void_reason').notEmpty().withMessage('Void reason is required'),
-    body('admin_username').notEmpty().withMessage('Admin username is required'),
     body('admin_password').notEmpty().withMessage('Admin password is required')
 ], async (req, res) => {
     const connection = await pool.getConnection();
@@ -481,25 +480,33 @@ router.post('/:id/void', [
         }
 
         const { id } = req.params;
-        const { void_reason, admin_username, admin_password } = req.body;
+        const { void_reason, admin_password } = req.body;
 
         // Verify admin credentials
         const [admins] = await connection.execute(
-            'SELECT id, username, password_hash, role FROM users WHERE username = ? AND role IN ("owner", "admin") AND is_active = TRUE',
-            [admin_username]
+            'SELECT id, username, password_hash, role FROM users WHERE role IN ("owner", "admin", "manager") AND is_active = TRUE'
         );
 
         if (admins.length === 0) {
-            return res.status(401).json({ error: 'Invalid admin credentials' });
+            return res.status(401).json({ error: 'No active administrators found' });
         }
 
-        const admin = admins[0];
         const { comparePassword } = require('../config/auth');
-        const isPasswordValid = await comparePassword(admin_password, admin.password_hash);
+        let authenticatedAdmin = null;
 
-        if (!isPasswordValid) {
-            return res.status(401).json({ error: 'Invalid admin credentials' });
+        for (const admin of admins) {
+            const isPasswordValid = await comparePassword(admin_password, admin.password_hash);
+            if (isPasswordValid) {
+                authenticatedAdmin = admin;
+                break;
+            }
         }
+
+        if (!authenticatedAdmin) {
+            return res.status(401).json({ error: 'Invalid admin password' });
+        }
+        
+        const admin = authenticatedAdmin;
 
         // Get order with items
         const [orders] = await connection.execute(

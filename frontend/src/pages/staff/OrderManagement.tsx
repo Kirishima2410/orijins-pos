@@ -32,7 +32,6 @@ const OrderManagement: React.FC = () => {
   });
   const [voidForm, setVoidForm] = useState({
     void_reason: '',
-    admin_username: '',
     admin_password: '',
   });
   const [searchInput, setSearchInput] = useState('');
@@ -185,7 +184,7 @@ const OrderManagement: React.FC = () => {
       await ordersAPI.void(selectedOrder.id, voidForm);
       toast.success('Order voided successfully');
       setShowVoidModal(false);
-      setVoidForm({ void_reason: '', admin_username: '', admin_password: '' });
+      setVoidForm({ void_reason: '', admin_password: '' });
       loadOrders();
     } catch (error) {
       console.error('Error voiding order:', error);
@@ -618,24 +617,15 @@ const OrderManagement: React.FC = () => {
                 />
               </div>
 
-              <div>
-                <label className="label">Admin Username</label>
-                <input
-                  type="text"
-                  value={voidForm.admin_username}
-                  onChange={(e) => setVoidForm({ ...voidForm, admin_username: e.target.value })}
-                  placeholder="Enter admin username"
-                  className="input"
-                />
-              </div>
+
 
               <div>
-                <label className="label">Admin Password</label>
+                <label className="label">Admin/Manager Password</label>
                 <input
                   type="password"
                   value={voidForm.admin_password}
                   onChange={(e) => setVoidForm({ ...voidForm, admin_password: e.target.value })}
-                  placeholder="Enter admin password"
+                  placeholder="Enter admin or manager password"
                   className="input"
                 />
               </div>
@@ -651,7 +641,7 @@ const OrderManagement: React.FC = () => {
               <button
                 onClick={handleVoidOrder}
                 className="btn btn-danger"
-                disabled={!voidForm.void_reason || !voidForm.admin_username || !voidForm.admin_password}
+                disabled={!voidForm.void_reason || !voidForm.admin_password}
               >
                 Void Order
               </button>

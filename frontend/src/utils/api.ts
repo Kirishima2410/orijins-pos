@@ -137,7 +137,7 @@ export const ordersAPI = {
   updateStatus: (id: number, status: string) =>
     api.patch(`/orders/${id}/status`, { status }),
 
-  void: (id: number, data: { void_reason: string; admin_username: string; admin_password: string }) =>
+  void: (id: number, data: { void_reason: string; admin_password: string }) =>
     api.post(`/orders/${id}/void`, data),
 
   getTodayStats: () =>
