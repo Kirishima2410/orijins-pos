@@ -79,8 +79,8 @@ const StaffDashboard: React.FC = () => {
       color: 'bg-warning-500',
     },
     {
-      name: "Low Stock Alerts",
-      value: overview.low_stock_alerts.toString(),
+      name: "Voided Orders Today",
+      value: (overview?.voided_orders || 0).toString(),
       change: null,
       changeType: null,
       icon: ExclamationTriangleIcon,

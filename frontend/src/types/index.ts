@@ -107,7 +107,7 @@ export interface DashboardOverview {
     avg_order_value: number;
   };
   pending_orders: number;
-  low_stock_alerts: number;
+  voided_orders: number;
   recent_orders: Order[];
   payment_breakdown: Array<{
     payment_method: 'cash' | 'gcash';

@@ -18,7 +18,7 @@ router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], 
                 COALESCE(SUM(total_amount), 0) as total_revenue,
                 COALESCE(AVG(total_amount), 0) as avg_order_value
              FROM orders 
-             WHERE DATE(created_at) = ? AND is_voided = FALSE AND status = 'completed'`,
+             WHERE DATE(DATE_ADD(created_at, INTERVAL 8 HOUR)) = ? AND is_voided = FALSE AND status = 'completed'`,
             [today]
         );
 
@@ -29,8 +29,13 @@ router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], 
              WHERE status IN ('pending', 'in_progress', 'ready') AND is_voided = FALSE`
         );
 
-        // Low stock alerts (Inventory)
-        const lowStock = [{ count: 0 }];
+        // Voided orders today
+        const [voidedOrders] = await pool.execute(
+            `SELECT COUNT(*) as count 
+             FROM orders 
+             WHERE DATE(DATE_ADD(created_at, INTERVAL 8 HOUR)) = ? AND (is_voided = TRUE OR status = 'voided')`,
+            [today]
+        );
 
         // Recent orders (last 10) - avoid ONLY_FULL_GROUP_BY by using scalar subquery
         const [recentOrders] = await pool.execute(
@@ -49,7 +54,7 @@ router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], 
         const [paymentBreakdown] = await pool.execute(
             `SELECT payment_method, COUNT(*) as count, COALESCE(SUM(total_amount), 0) as amount
              FROM orders 
-             WHERE DATE(created_at) = ? AND is_voided = FALSE AND status = 'completed'
+             WHERE DATE(DATE_ADD(created_at, INTERVAL 8 HOUR)) = ? AND is_voided = FALSE AND status = 'completed'
              GROUP BY payment_method`,
             [today]
         );
@@ -63,7 +68,7 @@ router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], 
              JOIN orders o ON oi.order_id = o.id
              JOIN menu_items mi ON oi.menu_item_id = mi.id
              LEFT JOIN categories c ON mi.category_id = c.id
-             WHERE DATE(o.created_at) = ? AND o.is_voided = FALSE AND o.status = 'completed'
+             WHERE DATE(DATE_ADD(o.created_at, INTERVAL 8 HOUR)) = ? AND o.is_voided = FALSE AND o.status = 'completed'
              GROUP BY mi.id, mi.name, mi.category_id, c.name
              ORDER BY total_quantity DESC
              LIMIT 5`,
@@ -73,7 +78,7 @@ router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], 
         res.json({
             today_sales: todaySales?.[0] || { total_orders: 0, total_revenue: 0, avg_order_value: 0 },
             pending_orders: pendingOrders?.[0]?.count || 0,
-            low_stock_alerts: lowStock?.[0]?.count || 0,
+            voided_orders: voidedOrders?.[0]?.count || 0,
             recent_orders: recentOrders || [],
             payment_breakdown: paymentBreakdown || [],
             top_items: topItems || []
@@ -83,7 +88,7 @@ router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], 
         res.json({
             today_sales: { total_orders: 0, total_revenue: 0, avg_order_value: 0 },
             pending_orders: 0,
-            low_stock_alerts: 0,
+            voided_orders: 0,
             recent_orders: [],
             payment_breakdown: [],
             top_items: []
@@ -199,7 +204,7 @@ router.get('/quick-stats', [authenticateToken, requireRole(['admin', 'cashier'])
                 COALESCE(SUM(total_amount), 0) as revenue,
                 COALESCE(AVG(total_amount), 0) as avg_order_value
              FROM orders 
-             WHERE DATE(created_at) = ? AND is_voided = FALSE AND status = 'completed'`,
+             WHERE DATE(DATE_ADD(created_at, INTERVAL 8 HOUR)) = ? AND is_voided = FALSE AND status = 'completed'`,
             [today]
         );
 
@@ -210,7 +215,7 @@ router.get('/quick-stats', [authenticateToken, requireRole(['admin', 'cashier'])
                 COALESCE(SUM(total_amount), 0) as revenue,
                 COALESCE(AVG(total_amount), 0) as avg_order_value
              FROM orders 
-             WHERE DATE(created_at) = ? AND is_voided = FALSE AND status = 'completed'`,
+             WHERE DATE(DATE_ADD(created_at, INTERVAL 8 HOUR)) = ? AND is_voided = FALSE AND status = 'completed'`,
             [yesterday]
         );
 
