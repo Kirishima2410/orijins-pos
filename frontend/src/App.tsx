@@ -8,6 +8,8 @@ import CustomerMenu from './pages/customer/Menu';
 import CustomerCheckout from './pages/customer/Checkout';
 import CustomerOrderConfirmation from './pages/customer/OrderConfirmation';
 import CustomerLanding from './pages/customer/CustomerLanding';
+import CustomerAbout from './pages/customer/About';
+import CustomerContact from './pages/customer/Contact';
 
 // Staff portal pages
 import StaffLogin from './pages/staff/Login';
@@ -52,6 +54,18 @@ function App() {
               <Route path="/order-confirmation/:orderNumber" element={
                 <CustomerLayout>
                   <CustomerOrderConfirmation />
+                </CustomerLayout>
+              } />
+
+              <Route path="/about" element={
+                <CustomerLayout>
+                  <CustomerAbout />
+                </CustomerLayout>
+              } />
+
+              <Route path="/contact" element={
+                <CustomerLayout>
+                  <CustomerContact />
                 </CustomerLayout>
               } />
 
