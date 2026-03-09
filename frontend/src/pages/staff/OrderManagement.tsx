@@ -517,6 +517,12 @@ const OrderManagement: React.FC = () => {
                   <label className="text-sm font-medium text-gray-600">Order Time</label>
                   <p className="text-gray-900">{new Date(selectedOrder.created_at).toLocaleString()}</p>
                 </div>
+                {(selectedOrder.is_voided || selectedOrder.status === 'voided') && selectedOrder.void_reason && (
+                  <div className="col-span-2 mt-2 p-3 bg-red-50 rounded-md border border-red-100">
+                    <label className="text-sm font-medium text-red-800">Reason for voiding</label>
+                    <p className="text-red-900 mt-1">{selectedOrder.void_reason}</p>
+                  </div>
+                )}
               </div>
 
               <div>
