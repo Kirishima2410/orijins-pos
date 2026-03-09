@@ -126,7 +126,7 @@ router.get('/items/:id', async (req, res) => {
 // Admin routes for menu management
 
 // Get all categories (admin)
-router.get('/admin/categories', [authenticateToken, requireRole(['admin'])], async (req, res) => {
+router.get('/admin/categories', [authenticateToken, requireRole(['admin', 'manager'])], async (req, res) => {
     try {
         const [categories] = await pool.execute(
             'SELECT * FROM categories ORDER BY display_order, name'
@@ -275,7 +275,7 @@ router.delete('/admin/categories/:id', [authenticateToken, requireRole(['admin']
 });
 
 // Get all menu items (admin)
-router.get('/admin/items', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/admin/items', [authenticateToken, requireRole(['admin', 'manager'])], async (req, res) => {
     try {
         const [items] = await pool.execute(
             `SELECT mi.*, c.name as category_name 
@@ -386,7 +386,7 @@ router.put('/admin/items/:id', [
 // Update stock quantity
 router.patch('/admin/items/:id/stock', [
     authenticateToken,
-    requireRole(['admin', 'cashier']),
+    requireRole(['admin', 'manager']),
     body('quantity').isInt({ min: 0 }).withMessage('Stock quantity must be a non-negative integer'),
     body('action').isIn(['set', 'add', 'subtract']).withMessage('Action must be set, add, or subtract'),
     body('notes').optional().isString()

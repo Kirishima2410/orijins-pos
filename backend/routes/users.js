@@ -12,12 +12,12 @@ router.get('/', [authenticateToken, requireRole(['admin'])], async (req, res) =>
         const page = Number(req.query.page || 1);
         const limit = Number(req.query.limit || 20);
 
-        let query = 'SELECT id, username, email, role, is_active, created_at, updated_at FROM users WHERE 1=1';
+        let query = 'SELECT id, username, role, is_active, created_at, updated_at FROM users WHERE 1=1';
         const params = [];
 
         if (search) {
-            query += ' AND (username LIKE ? OR email LIKE ?)';
-            params.push(`%${search}%`, `%${search}%`);
+            query += ' AND username LIKE ?';
+            params.push(`%${search}%`);
         }
 
         if (role) {
@@ -39,8 +39,8 @@ router.get('/', [authenticateToken, requireRole(['admin'])], async (req, res) =>
         const countParams = [];
 
         if (search) {
-            countQuery += ' AND (username LIKE ? OR email LIKE ?)';
-            countParams.push(`%${search}%`, `%${search}%`);
+            countQuery += ' AND username LIKE ?';
+            countParams.push(`%${search}%`);
         }
 
         if (role) {
@@ -72,7 +72,7 @@ router.get('/:id', [authenticateToken, requireRole(['admin'])], async (req, res)
         const { id } = req.params;
 
         const [users] = await pool.execute(
-            'SELECT id, username, email, role, is_active, created_at, updated_at FROM users WHERE id = ?',
+            'SELECT id, username, role, is_active, created_at, updated_at FROM users WHERE id = ?',
             [id]
         );
 
@@ -92,7 +92,6 @@ router.post('/', [
     authenticateToken,
     requireRole(['admin']),
     body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
-    body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('role').isIn(['admin', 'manager', 'cashier']).withMessage('Invalid role')
 ], async (req, res) => {
@@ -102,16 +101,16 @@ router.post('/', [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { username, email, password, role } = req.body;
+        const { username, password, role } = req.body;
 
-        // Check if username or email already exists
+        // Check if username already exists
         const [existingUsers] = await pool.execute(
-            'SELECT id FROM users WHERE username = ? OR email = ?',
-            [username, email]
+            'SELECT id FROM users WHERE username = ?',
+            [username]
         );
 
         if (existingUsers.length > 0) {
-            return res.status(400).json({ error: 'Username or email already exists' });
+            return res.status(400).json({ error: 'Username already exists' });
         }
 
         // Hash password
@@ -119,14 +118,14 @@ router.post('/', [
 
         // Create user
         const [result] = await pool.execute(
-            'INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)',
-            [username, email, passwordHash, role]
+            'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+            [username, passwordHash, role]
         );
 
         // Log activity
         await pool.execute(
             'INSERT INTO audit_logs (user_id, action, table_name, record_id, new_values) VALUES (?, ?, ?, ?, ?)',
-            [req.user.id, 'create', 'users', result.insertId, JSON.stringify({ username, email, role })]
+            [req.user.id, 'create', 'users', result.insertId, JSON.stringify({ username, role })]
         );
 
         res.status(201).json({
@@ -144,7 +143,6 @@ router.put('/:id', [
     authenticateToken,
     requireRole(['admin']),
     body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
-    body('email').isEmail().withMessage('Valid email is required'),
     body('role').isIn(['admin', 'manager', 'cashier']).withMessage('Invalid role'),
     body('is_active').isBoolean().withMessage('Active status must be boolean')
 ], async (req, res) => {
@@ -155,7 +153,7 @@ router.put('/:id', [
         }
 
         const { id } = req.params;
-        const { username, email, role, is_active } = req.body;
+        const { username, role, is_active } = req.body;
 
         // Get old values for audit log
         const [oldUsers] = await pool.execute(
@@ -167,20 +165,20 @@ router.put('/:id', [
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Check if username or email already exists (excluding current user)
+        // Check if username already exists (excluding current user)
         const [existingUsers] = await pool.execute(
-            'SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?',
-            [username, email, id]
+            'SELECT id FROM users WHERE username = ? AND id != ?',
+            [username, id]
         );
 
         if (existingUsers.length > 0) {
-            return res.status(400).json({ error: 'Username or email already exists' });
+            return res.status(400).json({ error: 'Username already exists' });
         }
 
         // Update user
         await pool.execute(
-            'UPDATE users SET username = ?, email = ?, role = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [username, email, role, is_active, id]
+            'UPDATE users SET username = ?, role = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [username, role, is_active, id]
         );
 
         // Log activity
@@ -192,7 +190,7 @@ router.put('/:id', [
                 'users',
                 id,
                 JSON.stringify(oldUsers[0]),
-                JSON.stringify({ username, email, role, is_active })
+                JSON.stringify({ username, role, is_active })
             ]
         );
 
@@ -342,7 +340,7 @@ router.get('/profile/me', [authenticateToken], async (req, res) => {
         const userId = req.user.id;
 
         const [users] = await pool.execute(
-            'SELECT id, username, email, role, is_active, created_at FROM users WHERE id = ?',
+            'SELECT id, username, role, is_active, created_at FROM users WHERE id = ?',
             [userId]
         );
 
@@ -360,8 +358,7 @@ router.get('/profile/me', [authenticateToken], async (req, res) => {
 // Update current user profile
 router.put('/profile/me', [
     authenticateToken,
-    body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters'),
-    body('email').isEmail().withMessage('Valid email is required')
+    body('username').isLength({ min: 3, max: 50 }).withMessage('Username must be 3-50 characters')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -370,22 +367,22 @@ router.put('/profile/me', [
         }
 
         const userId = req.user.id;
-        const { username, email } = req.body;
+        const { username } = req.body;
 
-        // Check if username or email already exists (excluding current user)
+        // Check if username already exists (excluding current user)
         const [existingUsers] = await pool.execute(
-            'SELECT id FROM users WHERE (username = ? OR email = ?) AND id != ?',
-            [username, email, userId]
+            'SELECT id FROM users WHERE username = ? AND id != ?',
+            [username, userId]
         );
 
         if (existingUsers.length > 0) {
-            return res.status(400).json({ error: 'Username or email already exists' });
+            return res.status(400).json({ error: 'Username already exists' });
         }
 
         // Update user
         await pool.execute(
-            'UPDATE users SET username = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-            [username, email, userId]
+            'UPDATE users SET username = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [username, userId]
         );
 
         res.json({ message: 'Profile updated successfully' });

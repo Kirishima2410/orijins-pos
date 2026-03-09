@@ -228,7 +228,7 @@ router.get('/public/:orderNumber', async (req, res) => {
 });
 
 // Get all orders (staff only)
-router.get('/', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         let { status, payment_method, search } = req.query;
         // Normalize values for consistent filtering
@@ -301,7 +301,7 @@ router.get('/', [authenticateToken, requireRole(['admin', 'cashier'])], async (r
 });
 
 // Get single order with items
-router.get('/:id', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/:id', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -338,7 +338,7 @@ router.get('/:id', [authenticateToken, requireRole(['admin', 'cashier'])], async
 // Update order status
 router.patch('/:id/status', [
     authenticateToken,
-    requireRole(['admin', 'cashier']),
+    requireRole(['admin', 'manager', 'cashier']),
     body('status').isIn(['pending', 'in_progress', 'ready', 'completed']).withMessage('Invalid status'),
     body('discount_amount').optional().isFloat({ min: 0 }).withMessage('Invalid discount amount'),
     body('cash_received').optional().isFloat({ min: 0 }).withMessage('Invalid cash received'),
@@ -564,7 +564,7 @@ router.post('/:id/void', [
 });
 
 // Get today's orders summary
-router.get('/stats/today', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/stats/today', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
 

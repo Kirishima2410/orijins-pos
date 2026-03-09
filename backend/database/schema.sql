@@ -8,7 +8,6 @@ USE coffee_shop_pos;
 CREATE TABLE users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('owner', 'admin', 'cashier') NOT NULL DEFAULT 'cashier',
     is_active BOOLEAN DEFAULT TRUE,
@@ -156,8 +155,8 @@ INSERT INTO settings (setting_key, setting_value, setting_type, description) VAL
 ('session_timeout', '3600', 'number', 'Session timeout in seconds (1 hour)');
 
 -- Insert default admin user (password: admin123)
-INSERT INTO users (username, email, password_hash, role) VALUES
-('admin', 'admin@coffeeshop.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'owner');
+INSERT INTO users (username, password_hash, role) VALUES
+('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'owner');
 
 -- Insert sample categories
 INSERT INTO categories (name, description, display_order) VALUES

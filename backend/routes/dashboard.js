@@ -5,7 +5,7 @@ const { authenticateToken, requireRole } = require('../config/auth');
 const router = express.Router();
 
 // Get dashboard overview data
-router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/overview', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const now = new Date();
         const offset = now.getTimezoneOffset();
@@ -97,7 +97,7 @@ router.get('/overview', [authenticateToken, requireRole(['admin', 'cashier'])], 
 });
 
 // Get sales chart data
-router.get('/sales-chart', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/sales-chart', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const { period = 'week' } = req.query;
         let dateFormat, dateCondition;
@@ -149,7 +149,7 @@ router.get('/sales-chart', [authenticateToken, requireRole(['admin', 'cashier'])
 // router.get('/inventory', ...)
 
 // Get recent activity
-router.get('/activity', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/activity', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const { limit = 20 } = req.query;
 
@@ -188,7 +188,7 @@ router.get('/activity', [authenticateToken, requireRole(['admin', 'cashier'])], 
 });
 
 // Get quick stats for today
-router.get('/quick-stats', [authenticateToken, requireRole(['admin', 'cashier'])], async (req, res) => {
+router.get('/quick-stats', [authenticateToken, requireRole(['admin', 'manager', 'cashier'])], async (req, res) => {
     try {
         const now = new Date();
         const offset = now.getTimezoneOffset();

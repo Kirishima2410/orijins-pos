@@ -20,7 +20,7 @@ router.post('/login', [
 
         // Get user from database
         const [users] = await pool.execute(
-            'SELECT id, username, email, password_hash, role, is_active FROM users WHERE username = ?',
+            'SELECT id, username, password_hash, role, is_active FROM users WHERE username = ?',
             [username]
         );
 
@@ -45,7 +45,6 @@ router.post('/login', [
         const token = generateToken({
             id: user.id,
             username: user.username,
-            email: user.email,
             role: user.role
         });
 
@@ -61,7 +60,6 @@ router.post('/login', [
             user: {
                 id: user.id,
                 username: user.username,
-                email: user.email,
                 role: user.role
             }
         });
@@ -78,7 +76,7 @@ router.get('/verify', authenticateToken, async (req, res) => {
 
         // Get updated user info
         const [users] = await pool.execute(
-            'SELECT id, username, email, role, is_active FROM users WHERE id = ?',
+            'SELECT id, username, role, is_active FROM users WHERE id = ?',
             [userId]
         );
 
@@ -97,7 +95,6 @@ router.get('/verify', authenticateToken, async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username,
-                email: user.email,
                 role: user.role
             }
         });

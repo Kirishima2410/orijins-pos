@@ -100,7 +100,7 @@ function App() {
               } />
 
               <Route path="/staff/menu" element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRoles={['admin', 'manager']}>
                   <StaffLayout>
                     <MenuManagement />
                   </StaffLayout>
@@ -111,14 +111,6 @@ function App() {
                 <ProtectedRoute requiredRoles={['admin']}>
                   <StaffLayout>
                     <UserManagement />
-                  </StaffLayout>
-                </ProtectedRoute>
-              } />
-
-              <Route path="/staff/reports" element={
-                <ProtectedRoute requiredRoles={['admin']}>
-                  <StaffLayout>
-                    <Reports />
                   </StaffLayout>
                 </ProtectedRoute>
               } />

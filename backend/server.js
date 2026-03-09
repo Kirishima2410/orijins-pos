@@ -115,8 +115,8 @@ const startServer = async () => {
             if (adminRows.length === 0) {
                 const adminHash = await hashPassword('admin123');
                 await pool.execute(
-                    'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, TRUE)',
-                    ['admin', 'admin@coffeeshop.local', adminHash, 'owner']
+                    'INSERT INTO users (username, password_hash, role, is_active) VALUES (?, ?, ?, TRUE)',
+                    ['admin', adminHash, 'owner']
                 );
                 console.log('👤 Seeded default admin user: admin / admin123');
             }
@@ -125,8 +125,8 @@ const startServer = async () => {
             if (cashierRows.length === 0) {
                 const cashierHash = await hashPassword('cashier123');
                 await pool.execute(
-                    'INSERT INTO users (username, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, TRUE)',
-                    ['cashier', 'cashier@coffeeshop.local', cashierHash, 'cashier']
+                    'INSERT INTO users (username, password_hash, role, is_active) VALUES (?, ?, ?, TRUE)',
+                    ['cashier', cashierHash, 'cashier']
                 );
                 console.log('👤 Seeded default cashier user: cashier / cashier123');
             }

@@ -36,25 +36,25 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
       name: 'Dashboard',
       href: '/staff',
       icon: HomeIcon,
-      roles: ['admin', 'cashier'],
+      roles: ['admin', 'manager', 'cashier'],
     },
     {
       name: 'Orders',
       href: '/staff/orders',
       icon: ClipboardDocumentListIcon,
-      roles: ['admin', 'cashier'],
+      roles: ['admin', 'manager', 'cashier'],
     },
     {
       name: 'POS',
       href: '/staff/pos',
       icon: ShoppingCartIcon,
-      roles: ['admin', 'cashier'],
+      roles: ['admin', 'manager', 'cashier'],
     },
     {
       name: 'Menu',
       href: '/staff/menu',
       icon: Cog6ToothIcon,
-      roles: ['admin', 'cashier'],
+      roles: ['admin', 'manager'],
     },
     {
       name: 'Inventory',
@@ -72,12 +72,6 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
       name: 'Tables',
       href: '/staff/tables',
       icon: Bars3Icon,
-      roles: ['admin'],
-    },
-    {
-      name: 'Reports',
-      href: '/staff/reports',
-      icon: ChartBarIcon,
       roles: ['admin'],
     },
     {

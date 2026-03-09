@@ -2,7 +2,6 @@
 export interface User {
   id: number;
   username: string;
-  email: string;
   role: 'admin' | 'manager' | 'cashier';
   is_active: boolean;
   created_at: string;
@@ -12,7 +11,6 @@ export interface User {
 export interface AuthUser {
   id: number;
   username: string;
-  email: string;
   role: 'admin' | 'manager' | 'cashier';
 }
 
@@ -254,7 +252,6 @@ export interface ChangePasswordForm {
 
 export interface CreateUserForm {
   username: string;
-  email: string;
   password: string;
   role: 'owner' | 'admin' | 'cashier';
 }

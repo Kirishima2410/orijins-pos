@@ -172,7 +172,7 @@ export const usersAPI = {
   getProfile: () =>
     api.get('/users/profile/me'),
 
-  updateProfile: (data: { username: string; email: string }) =>
+  updateProfile: (data: { username: string }) =>
     api.put('/users/profile/me', data),
 };
 
