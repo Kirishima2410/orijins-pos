@@ -26,6 +26,7 @@ const CustomerOrderConfirmation: React.FC = () => {
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderNumber]);
 
   const loadOrderDetails = async () => {

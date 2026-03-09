@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
+import { format, subDays, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
 import { reportsAPI } from '../../utils/api';
 import { SalesReport, OrdersReport, TopItemsReport } from '../../types';
 import {
@@ -52,6 +52,7 @@ const Reports: React.FC = () => {
 
   useEffect(() => {
     loadReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange, activeTab]);
 
   const loadReports = async () => {

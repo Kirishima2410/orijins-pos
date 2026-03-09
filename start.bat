@@ -13,16 +13,12 @@ echo.
 
 start "Backend Server" cmd /k "cd backend && npm run dev"
 timeout /t 3 /nobreak >nul
-start "Frontend Server" cmd /k "cd frontend && npm start"
+start "Frontend Server" cmd /k "cd frontend && set NODE_OPTIONS=--no-deprecation && npm start"
 
 echo.
 echo Application started successfully!
 echo.
 echo Customer Interface: http://localhost:3000
 echo Staff Portal: http://localhost:3000/staff/login
-echo.
-echo Default login credentials:
-echo Owner/Admin: admin / admin123
-echo Cashier: cashier / cashier123
 echo.
 pause

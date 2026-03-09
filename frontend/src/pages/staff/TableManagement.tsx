@@ -38,6 +38,7 @@ const TableManagement: React.FC = () => {
         if (qrTable) {
             generateQRCode(qrTable);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [qrTable]);
 
     const fetchTables = async () => {

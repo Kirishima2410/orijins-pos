@@ -8,12 +8,8 @@ import {
   TrashIcon,
   MagnifyingGlassIcon,
   ShoppingCartIcon,
-  PrinterIcon,
   BanknotesIcon,
-  CalculatorIcon,
   UserGroupIcon,
-  CheckBadgeIcon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -35,7 +31,6 @@ const POSInterface: React.FC = () => {
   const [currentOrder, setCurrentOrder] = useState<any | null>(null);
   const [cashReceived, setCashReceived] = useState<number>(0);
   const [discountApplied, setDiscountApplied] = useState(false);
-  const [discountAmount, setDiscountAmount] = useState(0);
 
   // Manager Auth for Discount
   const [showManagerAuth, setShowManagerAuth] = useState(false);
@@ -50,6 +45,7 @@ const POSInterface: React.FC = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -182,7 +178,6 @@ const POSInterface: React.FC = () => {
   const handleApplyDiscount = () => {
     if (discountApplied) {
       setDiscountApplied(false);
-      setDiscountAmount(0);
       return;
     }
     setShowManagerAuth(true);

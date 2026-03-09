@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { settingsAPI } from '../../utils/api';
 import { Settings as SettingsType } from '../../types';
-import { useAuth } from '../../contexts/AuthContext';
+
 import {
-  Cog6ToothIcon,
   BuildingStorefrontIcon,
   CurrencyDollarIcon,
-  ClockIcon,
-  BellIcon,
-  PhotoIcon,
   ArrowPathIcon,
-  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 const Settings: React.FC = () => {
-  const { user } = useAuth();
   const [settings, setSettings] = useState<SettingsType | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -53,13 +53,11 @@ const Inventory: React.FC = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [itemsRes, balancesRes] = await Promise.all([
-                inventoryAPI.getItems(),
-                inventoryAPI.getLatestBalances()
+            const [itemsRes] = await Promise.all([
+                inventoryAPI.getItems()
             ]);
 
             const fetchedItems = itemsRes.data as InventoryItem[];
-            const latestBalances = balancesRes.data as Record<number, number>;
 
             setItems(fetchedItems);
 

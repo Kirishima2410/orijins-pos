@@ -38,6 +38,7 @@ const OrderManagement: React.FC = () => {
 
   useEffect(() => {
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   useEffect(() => {
@@ -117,7 +118,7 @@ const OrderManagement: React.FC = () => {
       <title>Receipt ${order.order_number}</title>
       <style>
         @page { margin: 0; }
-        body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", \"Courier New\", monospace; margin: 0; }
+        body { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; margin: 0; }
         .receipt { width: 260px; padding: 12px; }
         h1 { font-size: 16px; margin: 0 0 4px 0; text-align:center; }
         .center { text-align:center; font-size:12px; }

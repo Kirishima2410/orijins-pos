@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { menuAPI } from '../../utils/api';
 import { CreateCategoryForm, CreateMenuItemForm } from '../../types';
-import { PlusIcon, PencilSquareIcon, TrashIcon, CheckCircleIcon, NoSymbolIcon, ArrowUpCircleIcon, ArrowDownCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, CheckCircleIcon, NoSymbolIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
 const MenuManagement: React.FC = () => {
@@ -128,34 +128,6 @@ const MenuManagement: React.FC = () => {
     }
   };
 
-  const promptQuantity = (label: string): number | null => {
-    const input = window.prompt(label, '1');
-    if (input === null) return null;
-    const value = Number(input);
-    if (!Number.isFinite(value) || value < 0) {
-      toast.error('Enter a non-negative number');
-      return null;
-    }
-    return Math.floor(value);
-  };
-
-  const handleAdjustStock = async (item: any, action: 'set' | 'add' | 'subtract') => {
-    const qty = promptQuantity(
-      action === 'set' ? 'Set stock to:' : action === 'add' ? 'Add quantity:' : 'Subtract quantity:'
-    );
-    if (qty === null) return;
-    if (action === 'subtract' && qty > Number(item.stock_quantity || 0)) {
-      return toast.error('Cannot subtract more than current stock');
-    }
-    try {
-      await menuAPI.updateStock(Number(item.id), { quantity: qty, action, notes: 'Adjusted from Menu Management' });
-      toast.success('Stock updated');
-      loadData();
-    } catch (e) {
-      console.error(e);
-      toast.error('Failed to update stock');
-    }
-  };
 
   if (loading) {
     return (
