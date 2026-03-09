@@ -11,7 +11,7 @@ const CustomerLanding: React.FC = () => {
     useEffect(() => {
         if (tableNumber) {
             setTableNumber(tableNumber);
-            toast.success(`Welcome! You are ordering for Table ${tableNumber}`);
+            toast.success('Welcome to our menu.', { id: 'welcome-toast' });
             navigate('/');
         } else {
             toast.error('Invalid table number');
