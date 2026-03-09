@@ -25,8 +25,10 @@ const StaffLayout: React.FC<StaffLayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/staff/login');
+    if (window.confirm('Are you sure you want to log out?')) {
+      await logout();
+      navigate('/staff/login');
+    }
   };
 
   const navigation = [

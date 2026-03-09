@@ -169,16 +169,6 @@ const StaffLogin: React.FC = () => {
           </div>
         </div>
 
-        {/* Demo Credentials */}
-        <div className="card bg-blue-50 border-blue-200">
-          <div className="card-body">
-            <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Credentials</h3>
-            <div className="text-xs text-blue-700 space-y-1">
-              <p><strong>Owner/Admin:</strong> admin / admin123</p>
-              <p><strong>Cashier:</strong> cashier / cashier123</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
