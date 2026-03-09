@@ -2,36 +2,8 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
 const { authenticateToken, requireRole } = require('../config/auth');
-const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
-
-// Configure multer for image uploads
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        cb(null, uuidv4() + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|webp/;
-        const mimetype = filetypes.test(file.mimetype);
-        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-        
-        if (mimetype && extname) {
-            return cb(null, true);
-        }
-        cb(new Error('Only images are allowed!'));
-    }
-});
 
 // Test database connection (no auth required)
 router.get('/test-db', async (req, res) => {
@@ -164,21 +136,6 @@ router.get('/admin/categories', [authenticateToken, requireRole(['admin'])], asy
     } catch (error) {
         console.error('Get admin categories error:', error);
         res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Upload menu item image
-router.post('/admin/upload/image', [authenticateToken, requireRole(['admin', 'cashier'])], upload.single('image'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No image uploaded' });
-        }
-        // Return the relative URL string that can be stored in the DB
-        const imageUrl = `/uploads/${req.file.filename}`;
-        res.json({ url: imageUrl });
-    } catch (error) {
-        console.error('Image upload error:', error);
-        res.status(500).json({ error: error.message || 'Internal server error' });
     }
 });
 
