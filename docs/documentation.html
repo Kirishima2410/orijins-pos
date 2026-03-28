@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orijins POS — Project Documentation</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --brand: #6f3e1e;
+      --brand-light: #a0622e;
+      --brand-pale: #fdf6f0;
+      --brand-border: #e8d5c4;
+      --bg: #f9f7f5;
+      --surface: #ffffff;
+      --text: #1a1410;
+      --muted: #6b5b4e;
+      --accent: #d4874a;
+      --code-bg: #1e1512;
+      --code-text: #f5dfc0;
+      --radius: 12px;
+      --shadow: 0 2px 16px rgba(111,62,30,0.08);
+      --shadow-lg: 0 8px 40px rgba(111,62,30,0.13);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #3d1c08 0%, #6f3e1e 50%, #a0622e 100%);
+      color: #fff;
+      padding: 80px 40px 70px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.06) 0%, transparent 60%);
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: #f5c98a; }
+    .hero p {
+      font-size: 1.15rem;
+      opacity: 0.85;
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .hero-pill {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 999px;
+      padding: 5px 16px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* ── LAYOUT ── */
+    .wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── NAV ── */
+    .nav-sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 230px;
+      height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--brand-border);
+      padding: 24px 0;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .nav-sidebar .nav-logo {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--brand-border);
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--brand);
+      margin-bottom: 12px;
+    }
+    .nav-sidebar a {
+      display: block;
+      padding: 7px 20px;
+      font-size: 13.5px;
+      color: var(--muted);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    .nav-sidebar a:hover {
+      color: var(--brand);
+      border-left-color: var(--accent);
+      background: var(--brand-pale);
+    }
+    .nav-sidebar .nav-section {
+      padding: 16px 20px 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .main-content {
+      margin-left: 230px;
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      padding: 60px 40px;
+      border-bottom: 1px solid var(--brand-border);
+    }
+    .section:last-child { border-bottom: none; }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .section-num {
+      background: var(--brand);
+      color: #fff;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .section h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--brand);
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--brand);
+      margin: 28px 0 12px;
+    }
+    p { margin-bottom: 14px; color: var(--muted); }
+
+    /* ── CARDS ── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--brand-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .card-icon {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+    .card h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .card p { font-size: 13px; margin: 0; }
+
+    /* ── TABLES ── */
+    .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: var(--radius); box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); }
+    thead tr { background: var(--brand); color: #fff; }
+    th { padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 600; letter-spacing: 0.3px; }
+    td { padding: 11px 16px; font-size: 13.5px; border-bottom: 1px solid var(--brand-border); color: var(--muted); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--brand-pale); }
+    td strong { color: var(--text); }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-admin { background: #fef2f2; color: #b91c1c; }
+    .badge-manager { background: #fffbeb; color: #b45309; }
+    .badge-cashier { background: #f0fdf4; color: #15803d; }
+    .badge-pub { background: #eff6ff; color: #1d4ed8; }
+
+    /* ── CODE ── */
+    pre {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: 16px 0;
+      box-shadow: var(--shadow-lg);
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--brand-pale);
+      color: var(--brand);
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 13px;
+    }
+    pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+
+    /* ── DIAGRAM BOX ── */
+    .diagram-box {
+      background: var(--surface);
+      border: 1px solid var(--brand-border);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      margin: 20px 0;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+      text-align: center;
+    }
+    .diagram-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    /* ── STACK GRID ── */
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .stack-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--brand-border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .stack-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .stack-item strong { display: block; font-size: 13.5px; color: var(--text); }
+    .stack-item span { font-size: 12px; color: var(--muted); }
+
+    /* ── ROLE TABLE ── */
+    .role-row td:first-child { font-weight: 600; color: var(--text); }
+
+    /* ── SECURITY LIST ── */
+    .sec-list { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 16px 0; }
+    .sec-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--brand-border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 13.5px;
+      color: var(--muted);
+    }
+    .sec-list li::before {
+      content: '🔒';
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .sec-list li strong { color: var(--text); display: block; font-size: 13px; }
+
+    /* ── HIGHLIGHT BOX ── */
+    .highlight {
+      background: linear-gradient(135deg, var(--brand-pale), #fff);
+      border-left: 4px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 16px 20px;
+      margin: 16px 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    /* ── MENU GRID ── */
+    .menu-category { margin-bottom: 24px; }
+    .menu-category h4 {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .menu-items-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .menu-chip {
+      background: var(--surface);
+      border: 1px solid var(--brand-border);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .menu-chip span { color: var(--brand); font-weight: 600; margin-left: 4px; }
+
+    /* ── FUTURE LIST ── */
+    .future-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 16px 0; }
+    .future-card {
+      background: var(--surface);
+      border: 1px solid var(--brand-border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .future-card .fi { font-size: 22px; margin-bottom: 8px; }
+    .future-card h4 { font-size: 13.5px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .future-card p { font-size: 12.5px; margin: 0; }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      background: var(--brand);
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+      padding: 36px 20px;
+      font-size: 13.5px;
+    }
+    .doc-footer strong { color: #fff; }
+
+    @media (max-width: 768px) {
+      .nav-sidebar { display: none; }
+      .main-content { margin-left: 0; }
+      .section { padding: 40px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR NAV -->
+<nav class="nav-sidebar">
+  <div class="nav-logo">☕ Orijins POS</div>
+  <div class="nav-section">Overview</div>
+  <a href="#overview">1. Project Overview</a>
+  <a href="#goals">2. Project Goals</a>
+  <div class="nav-section">Technical</div>
+  <a href="#architecture">3. System Architecture</a>
+  <a href="#techstack">4. Tech Stack</a>
+  <a href="#database">5. Database Design</a>
+  <a href="#api">6. API Design</a>
+  <div class="nav-section">Features</div>
+  <a href="#features">7. Features</a>
+  <a href="#rbac">8. Access Control</a>
+  <a href="#security">9. Security</a>
+  <div class="nav-section">More</div>
+  <a href="#menu">10. Current Menu</a>
+  <a href="#deployment">11. Deployment</a>
+  <a href="#future">12. Future Plans</a>
+</nav>
+
+<!-- MAIN -->
+<div class="main-content">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Project Documentation</div>
+    <h1>Orijins <span>POS</span> System</h1>
+    <p>A full-stack Point of Sale web application built for Orijins Coffee Shop — serving both customers and staff in one unified platform.</p>
+    <div class="hero-meta">
+      <span class="hero-pill">React 18 + TypeScript</span>
+      <span class="hero-pill">Node.js + Express</span>
+      <span class="hero-pill">MySQL</span>
+      <span class="hero-pill">JWT Auth</span>
+      <span class="hero-pill">PM2 Deployment</span>
+    </div>
+  </div>
+
+  <!-- 1. OVERVIEW -->
+  <section class="section" id="overview">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <h2>Project Overview</h2>
+    </div>
+    <p><strong>Orijins POS</strong> is a web-based Point of Sale system developed for <strong>Orijins</strong>, a local coffee shop. It replaces manual order-taking and cash handling with a digital workflow accessible from any browser — no installation required.</p>
+    <p>The system serves two distinct user groups on the same platform:</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon">🛒</div>
+        <h4>Customer Portal</h4>
+        <p>Browse the menu, build a cart, and pay via Cash or GCash from any device or at the table via QR code.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🖥️</div>
+        <h4>Staff Dashboard</h4>
+        <p>Full POS, order management, menu control, inventory tracking, reports, and business settings — role-controlled.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h4>Reports & Analytics</h4>
+        <p>Real-time dashboard, sales charts, and downloadable PDF/Excel reports for business decision-making.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h4>Inventory Tracking</h4>
+        <p>Daily manual inventory sheets for raw ingredients — beginning balance, deliveries, usage, waste, and ending balance.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. GOALS -->
+  <section class="section" id="goals">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <h2>Project Goals</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Goal</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Digitize ordering</strong></td><td>Replace paper/verbal orders with a structured digital flow</td></tr>
+          <tr><td><strong>Reduce errors</strong></td><td>Automated totals, change computation, and VAT calculation</td></tr>
+          <tr><td><strong>Role-based access</strong></td><td>Different permission levels for admin, manager, and cashier</td></tr>
+          <tr><td><strong>Business insights</strong></td><td>Real-time dashboard and exportable sales reports</td></tr>
+          <tr><td><strong>Inventory awareness</strong></td><td>Track raw ingredient usage through daily manual inventory sheets</td></tr>
+          <tr><td><strong>Payment flexibility</strong></td><td>Support both Cash and GCash with on-screen QR code</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3. ARCHITECTURE -->
+  <section class="section" id="architecture">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <h2>System Architecture</h2>
+    </div>
+    <p>The system follows a classic <strong>3-tier architecture</strong> — a React SPA frontend, a Node.js/Express REST API backend, and a MySQL relational database.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Overall System Architecture</div>
+      <div class="mermaid">
+graph TD
+    A["🛒 Customer Browser\n(React SPA — Port 3000)"] -->|REST API / Axios| C
+    B["🖥️ Staff Browser\n(React SPA — Port 3000)"] -->|REST API with JWT| C
+    C["⚙️ Express.js API Server\n(Node.js — Port 5000)"] -->|SQL Queries via mysql2| D
+    C -->|JWT Tokens| B
+    D["🗄️ MySQL Database\ncoffee_shop_pos"]
+
+    style A fill:#e8f4fd,stroke:#3b82f6,color:#1e40af
+    style B fill:#fdf2e8,stroke:#d97706,color:#92400e
+    style C fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style D fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+      </div>
+    </div>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Request & Authentication Flow</div>
+      <div class="mermaid">
+sequenceDiagram
+    participant U as Staff Browser
+    participant S as Express Server
+    participant DB as MySQL
+
+    U->>S: POST /api/auth/login (username + password)
+    S->>DB: SELECT user WHERE username = ?
+    DB-->>S: user row
+    S->>S: bcrypt.compare(password, hash)
+    S-->>U: JWT token (1 hour expiry)
+
+    Note over U,S: Authenticated Requests
+    U->>S: GET /api/orders (Authorization: Bearer JWT)
+    S->>S: verifyToken(JWT)
+    S->>S: requireRole(['admin','manager','cashier'])
+    S->>DB: SELECT * FROM orders
+    DB-->>S: rows
+    S-->>U: JSON response
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:20px">
+      <table>
+        <thead><tr><th>Layer</th><th>Technology</th><th>Port</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Frontend (SPA)</strong></td><td>React 18 + TypeScript</td><td>3000</td></tr>
+          <tr><td><strong>Backend (API)</strong></td><td>Node.js + Express.js</td><td>5000</td></tr>
+          <tr><td><strong>Database</strong></td><td>MySQL</td><td>3306</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. TECH STACK -->
+  <section class="section" id="techstack">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <h2>Tech Stack</h2>
+    </div>
+
+    <h3>Frontend</h3>
+    <div class="stack-grid">
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>React 18</strong><span>UI component framework</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>TypeScript</strong><span>Type-safe JavaScript</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>Tailwind CSS</strong><span>Utility-first styling</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>React Router v6</strong><span>Client-side routing</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>Axios</strong><span>HTTP API client</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>React Context API</strong><span>Auth & Cart global state</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>Recharts</strong><span>Sales charts & analytics</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>jsPDF + SheetJS</strong><span>PDF & Excel exports</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>react-hot-toast</strong><span>Toast notifications</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>qrcode</strong><span>GCash QR generation</span></div></div>
+    </div>
+
+    <h3>Backend</h3>
+    <div class="stack-grid">
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>Node.js</strong><span>JavaScript runtime</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>Express.js</strong><span>Web framework & routing</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>mysql2</strong><span>MySQL database driver</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>JWT</strong><span>Stateless auth tokens</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>bcryptjs</strong><span>Password hashing</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>Helmet.js</strong><span>HTTP security headers</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>express-rate-limit</strong><span>Brute-force protection</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>express-validator</strong><span>Input validation</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>Multer + uuid</strong><span>File upload handling</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>dotenv</strong><span>Environment config</span></div></div>
+    </div>
+
+    <h3>Deployment & Tooling</h3>
+    <div class="stack-grid">
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>PM2</strong><span>Production process manager</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>concurrently</strong><span>Run both servers in dev</span></div></div>
+      <div class="stack-item"><div class="stack-dot"></div><div><strong>MySQL Workbench</strong><span>DB management tool</span></div></div>
+    </div>
+  </section>
+
+  <!-- 5. DATABASE -->
+  <section class="section" id="database">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <h2>Database Design</h2>
+    </div>
+    <p>The database <code>coffee_shop_pos</code> contains <strong>13 tables</strong> with proper relational integrity — foreign keys, indexes, and ENUM constraints.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Database Table Relationships</div>
+      <div class="mermaid">
+flowchart TD
+    users["👤 users\nid · username · password_hash\nrole · is_active"]
+    categories["📂 categories\nid · name · description\ndisplay_order · is_active"]
+    menu_items["🍽️ menu_items\nid · name · category_id\nprice · is_available · stock_quantity"]
+    menu_item_variants["🔀 menu_item_variants\nid · menu_item_id\nvariant_name · size_label · price"]
+    dining_tables["🪑 dining_tables\nid · table_number\ncapacity · status · qr_code_url"]
+    orders["🧾 orders\nid · order_number · customer_name\ntotal_amount · discount_amount\npayment_method · status · is_voided"]
+    order_items["📝 order_items\nid · order_id · menu_item_id\nmenu_item_variant_id · quantity · unit_price"]
+    transactions["💳 transactions\nid · order_id\namount · payment_method"]
+    expenses["💸 expenses\nid · description · amount\ncategory · expense_date"]
+    inventory_logs["📦 inventory_logs\nid · menu_item_id · action_type\nquantity_change · prev_stock · new_stock"]
+    audit_logs["🔍 audit_logs\nid · user_id · action\ntable_name · old_values · new_values"]
+    settings["⚙️ settings\nid · setting_key · setting_value\nsetting_type"]
+    mi_items["📋 manual_inventory_items\nid · item_code · description\nunit_of_measurement · category"]
+    mi_sheets["📅 manual_inventory_sheets\nid · sheet_date · department\nperformed_by"]
+    mi_entries["✏️ manual_inventory_entries\nid · sheet_id · item_id\nbeg_bal · delivery · usage · waste · end_bal"]
+
+    categories -->|"1 → many"| menu_items
+    menu_items -->|"1 → many"| menu_item_variants
+    menu_items -->|"1 → many"| order_items
+    menu_items -->|"1 → many"| inventory_logs
+    orders -->|"1 → many"| order_items
+    orders -->|"1 → many"| transactions
+    users -->|"voids"| orders
+    users -->|"creates"| expenses
+    users -->|"generates"| audit_logs
+    users -->|"performs"| mi_sheets
+    mi_sheets -->|"1 → many"| mi_entries
+    mi_items -->|"1 → many"| mi_entries
+
+    style users fill:#fdf6f0,stroke:#a0622e,color:#3d1c08
+    style categories fill:#fdf6f0,stroke:#a0622e,color:#3d1c08
+    style menu_items fill:#fff8f0,stroke:#d4874a,color:#3d1c08
+    style menu_item_variants fill:#fff8f0,stroke:#d4874a,color:#3d1c08
+    style orders fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style order_items fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style transactions fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style dining_tables fill:#eff6ff,stroke:#3b82f6,color:#1e40af
+    style expenses fill:#fef9f0,stroke:#f59e0b,color:#78350f
+    style inventory_logs fill:#fef9f0,stroke:#f59e0b,color:#78350f
+    style audit_logs fill:#fdf2f8,stroke:#9333ea,color:#4a1d96
+    style settings fill:#fdf2f8,stroke:#9333ea,color:#4a1d96
+    style mi_items fill:#f0f9ff,stroke:#0ea5e9,color:#0c4a6e
+    style mi_sheets fill:#f0f9ff,stroke:#0ea5e9,color:#0c4a6e
+    style mi_entries fill:#f0f9ff,stroke:#0ea5e9,color:#0c4a6e
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Table</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>users</code></td><td>Staff accounts with role (admin, manager, cashier)</td></tr>
+          <tr><td><code>categories</code></td><td>Menu groupings (e.g. CHILL DRINKS, HOT COFFEE)</td></tr>
+          <tr><td><code>menu_items</code></td><td>Products with price, availability, and stock quantity</td></tr>
+          <tr><td><code>menu_item_variants</code></td><td>Size/option variants per item</td></tr>
+          <tr><td><code>dining_tables</code></td><td>Physical shop tables with QR code support</td></tr>
+          <tr><td><code>orders</code></td><td>Customer orders — includes VAT, discount, payment fields</td></tr>
+          <tr><td><code>order_items</code></td><td>Line items within each order</td></tr>
+          <tr><td><code>transactions</code></td><td>Payment records linked to completed orders</td></tr>
+          <tr><td><code>expenses</code></td><td>Business expense log</td></tr>
+          <tr><td><code>inventory_logs</code></td><td>Stock change audit trail</td></tr>
+          <tr><td><code>audit_logs</code></td><td>System-wide activity log with JSON old/new diffs</td></tr>
+          <tr><td><code>settings</code></td><td>Runtime key-value configuration store</td></tr>
+          <tr><td><code>manual_inventory_items</code></td><td>Predefined raw ingredients & supplies list</td></tr>
+          <tr><td><code>manual_inventory_sheets</code></td><td>Daily inventory count sessions</td></tr>
+          <tr><td><code>manual_inventory_entries</code></td><td>Per-item readings within a sheet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 6. API -->
+  <section class="section" id="api">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <h2>API Design</h2>
+    </div>
+    <p>The backend exposes a <strong>RESTful API</strong> under <code>/api</code>. All staff endpoints require a valid <strong>JWT Bearer token</strong>. Public endpoints (menu, order status) require no authentication.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Order Creation Flow</div>
+      <div class="mermaid">
+flowchart TD
+    A([Customer / Staff]) --> B[POST /api/orders]
+    B --> C{Validate request\nbody}
+    C -- Invalid --> Z1[400 Bad Request]
+    C -- Valid --> D[Verify each menu item\nis available]
+    D -- Not found --> Z2[400 Item not found]
+    D -- All valid --> E[Calculate totals\n+ VAT + discount]
+    E --> F[Begin DB transaction]
+    F --> G[INSERT orders]
+    G --> H[INSERT order_items\nfor each line item]
+    H --> I[INSERT transaction\npayment record]
+    I --> J[COMMIT]
+    J --> K([201 Order Created ✅])
+
+    style K fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style Z1 fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+    style Z2 fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+      </div>
+    </div>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Void Order Flow (Admin Protected)</div>
+      <div class="mermaid">
+flowchart TD
+    A([Admin Staff]) --> B[POST /api/orders/:id/void]
+    B --> C{JWT valid?\nRole = admin?}
+    C -- No --> Z1[401 / 403 Denied]
+    C -- Yes --> D[Validate void_reason\n+ admin_password]
+    D -- Missing --> Z2[400 Bad Request]
+    D -- OK --> E[Look up all active\nadmin+manager users]
+    E --> F{bcrypt.compare\nadmin_password\nagainst each hash}
+    F -- No match --> Z3[401 Invalid password]
+    F -- Match found --> G[UPDATE order\nstatus = voided\nvoided_by = admin.id]
+    G --> H[INSERT audit_log\nwith void reason]
+    H --> I([200 Order Voided ✅])
+
+    style I fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style Z1 fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+    style Z2 fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+    style Z3 fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Module</th><th>Base Route</th><th>Key Endpoints</th><th>Auth</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Auth</strong></td><td><code>/api/auth</code></td><td>POST /login, GET /verify, POST /change-password</td><td><span class="badge badge-pub">Public / JWT</span></td></tr>
+          <tr><td><strong>Menu</strong></td><td><code>/api/menu</code></td><td>GET /categories, GET /items, GET /items/:id</td><td><span class="badge badge-pub">Public</span></td></tr>
+          <tr><td><strong>Menu Admin</strong></td><td><code>/api/menu/admin</code></td><td>CRUD categories and items, PATCH stock</td><td><span class="badge badge-admin">Admin</span></td></tr>
+          <tr><td><strong>Orders</strong></td><td><code>/api/orders</code></td><td>POST /, GET /, PATCH /:id/status, POST /:id/void</td><td><span class="badge badge-cashier">All staff</span></td></tr>
+          <tr><td><strong>Users</strong></td><td><code>/api/users</code></td><td>CRUD staff accounts, reset passwords</td><td><span class="badge badge-admin">Admin</span></td></tr>
+          <tr><td><strong>Dashboard</strong></td><td><code>/api/dashboard</code></td><td>GET /overview, GET /sales-chart</td><td><span class="badge badge-cashier">All staff</span></td></tr>
+          <tr><td><strong>Reports</strong></td><td><code>/api/reports</code></td><td>GET /sales, GET /orders, GET /top-items</td><td><span class="badge badge-manager">Admin/Mgr</span></td></tr>
+          <tr><td><strong>Expenses</strong></td><td><code>/api/expenses</code></td><td>CRUD expense entries</td><td><span class="badge badge-admin">Admin</span></td></tr>
+          <tr><td><strong>Inventory</strong></td><td><code>/api/inventory</code></td><td>GET /items, POST /sheets, GET /latest-balances</td><td><span class="badge badge-cashier">All staff</span></td></tr>
+          <tr><td><strong>Tables</strong></td><td><code>/api/tables</code></td><td>CRUD dining tables</td><td><span class="badge badge-admin">Admin</span></td></tr>
+          <tr><td><strong>Settings</strong></td><td><code>/api/settings</code></td><td>GET /, PUT /:key, GET /public/shop-info</td><td><span class="badge badge-admin">Admin</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 7. FEATURES -->
+  <section class="section" id="features">
+    <div class="section-header">
+      <div class="section-num">7</div>
+      <h2>Features</h2>
+    </div>
+
+    <h3>Customer Portal</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-icon">🍽️</div><h4>Menu Browsing</h4><p>Categorized menu with item images, pricing, and variant selection.</p></div>
+      <div class="card"><div class="card-icon">🛒</div><h4>Cart & Checkout</h4><p>Add items, adjust quantities, enter name, and choose payment method.</p></div>
+      <div class="card"><div class="card-icon">💳</div><h4>GCash Payment</h4><p>QR code displayed on-screen for scan-to-pay. Automatically computed total.</p></div>
+      <div class="card"><div class="card-icon">📱</div><h4>QR Table Ordering</h4><p>Customers scan a QR code at their table and order directly from their phone.</p></div>
+      <div class="card"><div class="card-icon">✅</div><h4>Order Confirmation</h4><p>Unique order number and real-time order status tracking after checkout.</p></div>
+    </div>
+
+    <h3>Staff Dashboard</h3>
+    <div class="card-grid">
+      <div class="card"><div class="card-icon">📊</div><h4>Dashboard</h4><p>Real-time KPIs — daily revenue, total orders, top items, and sales chart.</p></div>
+      <div class="card"><div class="card-icon">💰</div><h4>POS Interface</h4><p>Counter ordering with cash/GCash, VAT toggle, and discount support.</p></div>
+      <div class="card"><div class="card-icon">📋</div><h4>Order Management</h4><p>View, filter, update status, and void orders. Reason and timestamp logged permanently.</p></div>
+      <div class="card"><div class="card-icon">🍽️</div><h4>Menu Management</h4><p>Add/edit/delete categories and menu items with availability toggle.</p></div>
+      <div class="card"><div class="card-icon">👥</div><h4>User Management</h4><p>Create staff accounts, assign roles, reset passwords, deactivate users.</p></div>
+      <div class="card"><div class="card-icon">📦</div><h4>Inventory Sheets</h4><p>Daily ingredient tracking with beg balance, deliveries, usage, waste, and end balance.</p></div>
+      <div class="card"><div class="card-icon">📈</div><h4>Reports</h4><p>Date-range sales and expense reports — export as PDF or Excel.</p></div>
+      <div class="card"><div class="card-icon">⚙️</div><h4>Settings</h4><p>Configure shop name, VAT rate, GCash number, QR code, and receipt footer.</p></div>
+    </div>
+  </section>
+
+  <!-- 8. RBAC -->
+  <section class="section" id="rbac">
+    <div class="section-header">
+      <div class="section-num">8</div>
+      <h2>Role-Based Access Control</h2>
+    </div>
+    <p>Every staff route is protected server-side by a <code>requireRole([])</code> middleware that checks the user's role from the decoded JWT before allowing access.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Role Permission Matrix</div>
+      <div class="mermaid">
+graph LR
+    Admin["👑 Admin\n(Full access)"]
+    Manager["🧑‍💼 Manager"]
+    Cashier["💼 Cashier"]
+
+    Admin --> D[Dashboard]
+    Admin --> POS[POS]
+    Admin --> OM[Order Management]
+    Admin --> MM[Menu Management]
+    Admin --> UM[User Management]
+    Admin --> RP[Reports]
+    Admin --> INV[Inventory]
+    Admin --> EX[Expenses]
+    Admin --> TM[Table Management]
+    Admin --> ST[Settings]
+
+    Manager --> D
+    Manager --> POS
+    Manager --> OM
+    Manager --> MM
+    Manager --> RP
+    Manager --> INV
+
+    Cashier --> D
+    Cashier --> POS
+    Cashier --> OM
+    Cashier --> INV
+
+    style Admin fill:#fef2f2,stroke:#dc2626,color:#7f1d1d
+    style Manager fill:#fffbeb,stroke:#d97706,color:#92400e
+    style Cashier fill:#f0fdf4,stroke:#16a34a,color:#14532d
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Feature</th><th>Admin</th><th>Manager</th><th>Cashier</th></tr></thead>
+        <tbody class="role-row">
+          <tr><td>Dashboard</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>POS Interface</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Order Management</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>Void Orders</td><td>✅</td><td>❌</td><td>❌</td></tr>
+          <tr><td>Menu Management</td><td>✅</td><td>✅</td><td>❌</td></tr>
+          <tr><td>Reports</td><td>✅</td><td>✅</td><td>❌</td></tr>
+          <tr><td>Inventory Sheets</td><td>✅</td><td>✅</td><td>✅</td></tr>
+          <tr><td>User Management</td><td>✅</td><td>❌</td><td>❌</td></tr>
+          <tr><td>Expenses</td><td>✅</td><td>❌</td><td>❌</td></tr>
+          <tr><td>Table Management</td><td>✅</td><td>❌</td><td>❌</td></tr>
+          <tr><td>Settings</td><td>✅</td><td>❌</td><td>❌</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 9. SECURITY -->
+  <section class="section" id="security">
+    <div class="section-header">
+      <div class="section-num">9</div>
+      <h2>Security</h2>
+    </div>
+    <ul class="sec-list">
+      <li><div><strong>JWT Authentication</strong>Signed tokens expire in 1 hour. No sessions stored server-side.</div></li>
+      <li><div><strong>Password Hashing</strong>bcryptjs with 10 salt rounds. Plain-text passwords never stored.</div></li>
+      <li><div><strong>HTTP Security Headers</strong>Helmet.js sets XSS protection, HSTS, content security policy.</div></li>
+      <li><div><strong>Rate Limiting</strong>express-rate-limit throttles requests per IP in production.</div></li>
+      <li><div><strong>Input Validation</strong>express-validator sanitizes and validates all request bodies.</div></li>
+      <li><div><strong>SQL Injection Prevention</strong>All queries use parameterized statements via mysql2.</div></li>
+      <li><div><strong>CORS Restriction</strong>API only accepts requests from the configured frontend origin.</div></li>
+      <li><div><strong>Admin Re-verification</strong>Sensitive actions (void order) require re-entering admin password.</div></li>
+      <li><div><strong>Audit Logging</strong>Every create/update/delete is logged with old and new JSON values.</div></li>
+    </ul>
+  </section>
+
+  <!-- 10. MENU -->
+  <section class="section" id="menu">
+    <div class="section-header">
+      <div class="section-num">10</div>
+      <h2>Current Menu <span style="font-size:14px;font-weight:400;color:var(--muted)">(as of March 2026)</span></h2>
+    </div>
+
+    <div class="menu-category">
+      <h4>🧊 CHILL DRINKS — Iced fruit &amp; soda mixes</h4>
+      <div class="menu-items-list">
+        <span class="menu-chip">Blue Ocean Deep <span>₱128</span></span>
+        <span class="menu-chip">Cold Choco <span>₱128</span></span>
+        <span class="menu-chip">Green Lagoon <span>₱128</span></span>
+        <span class="menu-chip">Strawberry Cocoa <span>₱138</span></span>
+        <span class="menu-chip">Wild Berry Creek <span>₱128</span></span>
+      </div>
+    </div>
+
+    <div class="menu-category">
+      <h4>🍵 GREENLAND (Matcha Drinks) — Matcha-based beverages</h4>
+      <div class="menu-items-list">
+        <span class="menu-chip">Creamy Matcha Freshmilk <span>₱128</span></span>
+        <span class="menu-chip">Creamy Matcha Oatmilk <span>₱128</span></span>
+        <span class="menu-chip">Strawberry Matcha <span>₱128</span></span>
+      </div>
+    </div>
+
+    <div class="menu-category">
+      <h4>☕ HOT COFFEE — Hot espresso drinks</h4>
+      <div class="menu-items-list">
+        <span class="menu-chip">Hot Americano <span>₱108</span></span>
+        <span class="menu-chip">Hot Choco <span>₱108</span></span>
+        <span class="menu-chip">Hot Latte <span>₱108</span></span>
+        <span class="menu-chip">Hot Matcha <span>₱108</span></span>
+        <span class="menu-chip">Hot Mocha <span>₱108</span></span>
+        <span class="menu-chip">Hot Spanish Latte <span>₱108</span></span>
+      </div>
+    </div>
+
+    <div class="menu-category">
+      <h4>🧋 COLD COFFEE — Iced espresso drinks</h4>
+      <div class="menu-items-list">
+        <span class="menu-chip">Cinnamon Latte <span>₱138</span></span>
+        <span class="menu-chip">Dark Latte <span>₱138</span></span>
+        <span class="menu-chip">Iced Americano <span>₱118</span></span>
+        <span class="menu-chip">Lotus Biscoff Latte <span>₱158</span></span>
+        <span class="menu-chip">Salted Caramel Latte <span>₱138</span></span>
+        <span class="menu-chip">Spanish Latte <span>₱128</span></span>
+        <span class="menu-chip">Tiramisu Latte <span>₱138</span></span>
+        <span class="menu-chip">White Mocha Latte <span>₱138</span></span>
+      </div>
+    </div>
+
+    <div class="menu-category">
+      <h4>🍰 CHEESECAKE SERIES — Cheesecakes</h4>
+      <div class="menu-items-list">
+        <span class="menu-chip">Blueberry Cheesecake <span>₱148</span></span>
+        <span class="menu-chip">Nutella Cheesecake <span>₱148</span></span>
+        <span class="menu-chip">Strawberry Cheesecake <span>₱148</span></span>
+        <span class="menu-chip">Ube Cheesecake <span>₱148</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. DEPLOYMENT -->
+  <section class="section" id="deployment">
+    <div class="section-header">
+      <div class="section-num">11</div>
+      <h2>Deployment</h2>
+    </div>
+    <p>The system is deployed using <strong>PM2</strong>, which manages both the backend Node.js process and the frontend static file server — with auto-restart on crash.</p>
+
+    <div class="diagram-box">
+      <div class="diagram-label">Deployment Flow</div>
+      <div class="mermaid">
+flowchart LR
+    A[Clone Repository] --> B[npm run install-all]
+    B --> C[Run schema.sql\nin MySQL Workbench]
+    C --> D[Configure backend/.env\nDB + JWT + CORS]
+    D --> E[cd frontend\nnpm run build]
+    E --> F[pm2 start ecosystem.config.js\n--env production]
+    F --> G1["✅ Backend running\nlocalhost:5000"]
+    F --> G2["✅ Frontend served\nlocalhost:3000"]
+      </div>
+    </div>
+
+    <h3>Environment Variables <code>backend/.env</code></h3>
+    <pre><code># Database
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=coffee_shop_pos
+
+# Auth
+JWT_SECRET=your_very_secure_secret
+JWT_EXPIRES_IN=1h
+
+# Server
+PORT=5000
+NODE_ENV=production
+CORS_ORIGIN=http://your-domain.com</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>URL</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>http://localhost:3000</code></td><td>Customer ordering portal</td></tr>
+          <tr><td><code>http://localhost:3000/staff/login</code></td><td>Staff login page</td></tr>
+          <tr><td><code>http://localhost:5000/api</code></td><td>Backend REST API</td></tr>
+          <tr><td><code>http://localhost:5000/api/health</code></td><td>Server health check endpoint</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 12. FUTURE -->
+  <section class="section" id="future">
+    <div class="section-header">
+      <div class="section-num">12</div>
+      <h2>Future Improvements</h2>
+    </div>
+    <div class="future-grid">
+      <div class="future-card"><div class="fi">🚚</div><h4>Online Delivery</h4><p>Integration with delivery platforms or custom rider dispatch.</p></div>
+      <div class="future-card"><div class="fi">🖥️</div><h4>Kitchen Display System</h4><p>Separate screen for kitchen to see and update order status in real-time.</p></div>
+      <div class="future-card"><div class="fi">🎁</div><h4>Loyalty / Rewards</h4><p>Points-based rewards program for returning customers.</p></div>
+      <div class="future-card"><div class="fi">🕐</div><h4>Shift Management</h4><p>Open/close cash register with beginning cash count per shift.</p></div>
+      <div class="future-card"><div class="fi">📣</div><h4>Low Stock Alerts</h4><p>Automated email or SMS alerts when items drop below threshold.</p></div>
+      <div class="future-card"><div class="fi">🏪</div><h4>Multi-Branch Support</h4><p>Single admin panel managing multiple Orijins locations.</p></div>
+      <div class="future-card"><div class="fi">👆</div><h4>Fingerprint Login</h4><p>Biometric authentication for faster, more secure staff login.</p></div>
+      <div class="future-card"><div class="fi">📥</div><h4>Supplier Management</h4><p>Track suppliers, purchase orders, and delivery schedules.</p></div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="doc-footer">
+    <strong>Orijins POS</strong> — Project Documentation &nbsp;·&nbsp; Built with React, Node.js, Express &amp; MySQL &nbsp;·&nbsp; March 2026
+  </div>
+
+</div><!-- /main-content -->
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#fdf6f0',
+      primaryTextColor: '#1a1410',
+      primaryBorderColor: '#a0622e',
+      lineColor: '#a0622e',
+      secondaryColor: '#fff8f3',
+      tertiaryColor: '#f5ece3',
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '14px',
+    },
+    flowchart: { curve: 'smooth', htmlLabels: true },
+    sequence: { actorMargin: 60 },
+    er: { layoutDirection: 'TB' }
+  });
+</script>
+
+</body>
+</html>
