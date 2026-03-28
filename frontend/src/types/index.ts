@@ -253,7 +253,7 @@ export interface ChangePasswordForm {
 export interface CreateUserForm {
   username: string;
   password: string;
-  role: 'owner' | 'admin' | 'cashier';
+  role: 'admin' | 'manager' | 'cashier';
 }
 
 export interface CreateCategoryForm {

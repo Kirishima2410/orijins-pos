@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { pool } = require('../config/database');
-const { authenticateToken, requireRole, isAdminOrOwner } = require('../config/auth');
+const { authenticateToken, requireRole } = require('../config/auth');
 const { v4: uuidv4 } = require('uuid');
 
 const router = express.Router();
@@ -484,7 +484,7 @@ router.post('/:id/void', [
 
         // Verify admin credentials
         const [admins] = await connection.execute(
-            'SELECT id, username, password_hash, role FROM users WHERE role IN ("owner", "admin", "manager") AND is_active = TRUE'
+            'SELECT id, username, password_hash, role FROM users WHERE role IN ("admin", "manager") AND is_active = TRUE'
         );
 
         if (admins.length === 0) {

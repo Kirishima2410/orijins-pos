@@ -249,7 +249,7 @@ router.post('/:id/reset-password', [
 });
 
 // Delete user (soft delete - deactivate)
-router.delete('/:id', [authenticateToken, requireRole(['owner'])], async (req, res) => {
+router.delete('/:id', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         const { id } = req.params;
 

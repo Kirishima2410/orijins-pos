@@ -273,8 +273,8 @@ router.get('/public/shop-info', async (req, res) => {
     }
 });
 
-// Reset settings to default (owner only)
-router.post('/reset', [authenticateToken, requireRole(['owner'])], async (req, res) => {
+// Reset settings to default (admin only)
+router.post('/reset', [authenticateToken, requireRole(['admin'])], async (req, res) => {
     try {
         // Get default settings
         const defaultSettings = {

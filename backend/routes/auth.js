@@ -219,7 +219,7 @@ router.post('/verify-role', [
         const allowedRoles = ['admin', 'manager'];
         if (requiredRole && requiredRole !== 'manager') {
             // generally strictly check if a specific role is asked, but for now we essentially want "is this a manager-level person"
-            if (user.role !== requiredRole && !['admin', 'owner'].includes(user.role)) {
+            if (user.role !== requiredRole && user.role !== 'admin') {
                 return res.status(403).json({ error: 'Insufficient permissions' });
             }
         } else {

@@ -116,7 +116,7 @@ const startServer = async () => {
                 const adminHash = await hashPassword('admin123');
                 await pool.execute(
                     'INSERT INTO users (username, password_hash, role, is_active) VALUES (?, ?, ?, TRUE)',
-                    ['admin', adminHash, 'owner']
+                    ['admin', adminHash, 'admin']
                 );
                 console.log('👤 Seeded default admin user: admin / admin123');
             }

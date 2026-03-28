@@ -67,7 +67,7 @@ async function updateSchema() {
         try {
             await pool.execute(`
                 ALTER TABLE users 
-                MODIFY COLUMN role ENUM('owner', 'admin', 'manager', 'cashier') NOT NULL DEFAULT 'cashier'
+                MODIFY COLUMN role ENUM('admin', 'manager', 'cashier') NOT NULL DEFAULT 'cashier'
             `);
             console.log('✅ Users role enum updated');
         } catch (error) {
